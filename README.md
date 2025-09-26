@@ -1,55 +1,61 @@
 # 🛒 Tech Trend Emporium
 
-This repository contains the **Tech Trend Emporium** built with **.NET 8.0.0** and **PostgreSQL**.  
-The system follows a **microservices architecture**, with services aligned to key business domains such as **Identity**, **Catalog**, **Cart**, **Wishlist**, **Reviews**, and **Approval Jobs**.  
+This repository contains **Tech Trend Emporium**, built with **.NET 8.0.0** and **PostgreSQL**.  
+The system follows a **microservices-inspired modular architecture** with multiple **DbContexts** (one per bounded context) pointing to the **same database** for learning purposes.
 
-The platform is designed to practice **modern software architecture**, **CI/CD pipelines**, and **cloud deployment strategies**.
+> **Note:** In production, true microservices usually own **separate databases**. Here we keep **one DB** to reduce operational overhead while preserving clean boundaries in code.
 
 ---
 
 ## 📌 Vision
 
 - Provide a **modular and scalable** e-commerce backend.
-- Demonstrate the application of **Clean Architecture**, **Domain-Driven Design (DDD)**, and **microservices principles** in .NET.
+- Demonstrate **Clean Architecture**, **DDD boundaries**, and **microservice-aligned** practices in .NET.
 - Integrate with **external APIs** (FakeStore API) for initial seeding of products and categories.
-- Support **dynamic authentication and authorization** with multiple roles: `SUPERADMIN`, `ADMIN`, `EMPLOYEE`, `CUSTOMER`.
-- Enable **continuous integration and deployment (CI/CD)** with Docker, GitHub Actions, and AWS.
+- Support **authentication & authorization** with roles: `ADMIN`, `EMPLOYEE`, `SHOPPER` (an optional `SUPERADMIN` can be added for governance flows).
+- Enable **CI/CD** with Docker, GitHub Actions, and **Azure**.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The solution is structured as a **set of independent services** communicating via HTTP and asynchronous messaging (event bus).  
+The solution is structured as a set of **bounded contexts**, each with its **own DbContext** and tables it owns.  
+Contexts communicate via HTTP and (optionally) asynchronous messaging.
 
-**Microservices:**
+**Contexts / Services:**
 1. **Identity API** – signup, login, logout, role-based access control.
-2. **Catalog API** – products, categories, integration with FakeStore API.
-3. **Approval Jobs API** – superadmin workflows for approvals/declines.
-4. **User Admin API** – superadmin endpoints for managing users.
-5. **Cart API** – shopping cart, coupons, totals.
-6. **Wishlist API** – customer wishlists.
-7. **Review API** – product reviews and ratings.
-8. **Seeder Service** – background job to sync with FakeStore API.
+2. **Catalog API** – products, categories, inventory, reviews; seeding via FakeStore.
+3. **Promotions API** – coupons and validation.
+4. **Shopping API** – cart, cart items, wishlist, wishlist items.
+5. **Governance API** – approval workflows for product/category operations.
+6. **Seeder Service** – background job to sync with FakeStore API.
+
+**Database Strategy (important):**
+- **One PostgreSQL database / default schema**.
+- **Multiple DbContexts** (Identity, Catalog, Promotions, Shopping, Governance).
+- **Foreign keys only inside a context** (e.g., `Product → Category`, `CartItem → Cart`).
+- **No physical FKs across contexts**: cross-context references are by **IDs/codes** (e.g., `Review.UserId`, `Cart.CouponCode`, `CartItem.ProductId`).  
+  Integrity is enforced at the application layer (API calls or read models).
 
 **Shared Infrastructure:**
-- **API Gateway** – routing, authentication, rate limiting.
-- **Event Bus** – RabbitMQ (or AWS SNS/SQS).
-- **Observability** – OpenTelemetry for logs, metrics, and traces.
+- **API Gateway** – YARP (optionally fronted by **Azure API Management**).
+- **Event Bus** – RabbitMQ (local/dev) or **Azure Service Bus** (cloud).
+- **Observability** – **OpenTelemetry** + **Azure Application Insights / Azure Monitor**.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **.NET 8.0.0** (Minimal APIs + Clean Architecture modules)
+- **.NET 8.0.0** (Minimal APIs + modular Clean Architecture)
 - **PostgreSQL 15+**
 - **Docker & Docker Compose**
-- **Entity Framework Core** (migrations per service)
+- **Entity Framework Core** (migrations **per context**)
 - **MediatR** for CQRS and domain events
-- **MassTransit** for messaging (RabbitMQ/SQS)
+- **MassTransit** for messaging (RabbitMQ / **Azure Service Bus**)
 - **Swagger / OpenAPI** for documentation
-- **Serilog** + **OpenTelemetry** for logging & tracing
+- **Serilog** + **OpenTelemetry** (exporters to **Application Insights**)
 - **GitHub Actions** for CI/CD
-- **AWS ECS/EKS** (deployment target)
+- **Azure** targets: **Azure Kubernetes Service (AKS)** or **Azure Container Apps**, **Azure Container Registry (ACR)**
 
 ---
 
@@ -60,14 +66,12 @@ The solution is structured as a **set of independent services** communicating vi
 /docs/                  # Documentation (ADR, API contracts, diagrams)
 /gateway/               # API Gateway (YARP or BFF)
 /services/
-  identity/             # Identity API
-  catalog/              # Catalog API + Seeder
-  approval/             # Approval Jobs API
-  useradmin/            # User Admin API
-  cart/                 # Cart API
-  wishlist/             # Wishlist API
-  review/               # Review API
-/infra/                 # Infrastructure as Code (Terraform, ECS task defs, K8s manifests)
+  identity/             # Identity API (Users, Sessions)
+  catalog/              # Catalog API + Seeder (Products, Categories, Inventory, Reviews)
+  promotions/           # Promotions API (Coupons)
+  shopping/             # Shopping API (Cart, CartItems, Wishlist, WishlistItems)
+  governance/           # Governance API (Approval Jobs)
+/infra/                 # IaC (Bicep/Terraform), AKS/Container Apps manifests (Helm/Kustomize/YAML)
 /tests/                 # Unit, Integration, Contract, E2E tests
 ```
 
@@ -104,9 +108,28 @@ This will spin up:
 Run migrations per service:
 
 ```bash
+# Catalog
 cd services/catalog
-dotnet ef database update
+dotnet ef database update -c CatalogDbContext
+
+# Identity
+cd ../identity
+dotnet ef database update -c IdentityDbContext
+
+# Promotions
+cd ../promotions
+dotnet ef database update -c PromotionsDbContext
+
+# Shopping
+cd ../shopping
+dotnet ef database update -c ShoppingDbContext
+
+# Governance
+cd ../governance
+dotnet ef database update -c GovernanceDbContext
 ```
+
+Alternative: use a dedicated MigrationsDbContext that maps all tables only for schema evolution.
 
 ---
 
@@ -122,17 +145,23 @@ Contract and E2E tests are under /tests.
 
 ---
 
-## 🔄 CI/CD
+## 🔄 CI/CD (Azure)
 
-CI: On every push to a feature/* branch
+CI (on every push/PR to main or feature/*):
+
 - Restore, build, test
-- Build Docker image tagged with commit SHA
-- Push to container registry
+- Build Docker images tagged with commit SHA
+- Push images to Azure Container Registry (ACR)
 
-CD: On merge to main
-- Deploy automatically to AWS ECS/EKS
+CD (on merge to main):
+
+- Deploy to AKS (Helm/Kustomize) or Azure Container Apps
+- Apply EF Core migrations per context (job or init container)
 - Notify team via Slack/Teams
-- See workflows under .github/workflows/.
+- See workflows under .github/workflows/
+
+Use GitHub OIDC to authenticate to Azure (no long-lived secrets).
+Environments: dev, prod with approvals and protection rules.
 
 ## 📖 Documentation
 
@@ -154,14 +183,14 @@ We follow a Trunk-Based Development strategy:
 ## 🗺️ Roadmap
 
 - Identity + Catalog services (MVP)
-- Approval workflow for products & categories
-- Cart, Wishlist, Reviews modules
-- CI/CD pipelines with GitHub Actions
-- Deployment to AWS ECS (Dev/Prod environments)
-- Observability (metrics, logs, traces)
+- Governance (approval) workflow for products & categories
+- Promotions (coupons) and Shopping (cart, wishlist)
+- CI/CD with GitHub Actions → deploy to Azure (AKS/Container Apps)
+- Observability via OpenTelemetry → Application Insights
+- Optional: switch to separate databases per context as the system evolves
 
 ---
 
 ## 📜 License
 
-MIT License. See LICENSE
+MIT License. See LICENSE.

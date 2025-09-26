@@ -35,8 +35,8 @@ namespace Data.Entities
 
         public DateTime? UpdatedAt { get; set; }
 
-        public int? WishlistId { get; set; }
-        public Wishlist? Wishlist { get; set; }
+        public int? WishListId { get; set; }
+        public WishList? WishList { get; set; }
 
         public int? CartId { get; set; }
         public Cart? Cart { get; set; }

@@ -87,8 +87,8 @@ Contexts communicate via HTTP and (optionally) asynchronous messaging.
 
 ### Clone Repository
 ```bash
-git clone https://github.com/<org>/<repo>.git
-cd <repo>
+git clone https://github.com/Tech-Trend-Emporium/tech-trend-backend.git
+cd tech-trend-backend
 ```
 
 Run Locally with Docker Compose

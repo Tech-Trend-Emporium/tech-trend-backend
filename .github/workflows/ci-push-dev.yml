@@ -1,0 +1,67 @@
+name: ci-push-dev (Artifact)
+
+on:
+  push:
+    branches: [development]
+
+concurrency:
+  group: ci-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '8.0.0' # Latest LTS version
+  IMAGE_NAME: trend-tech-emporium-api
+  IMAGE_TAG: ${{ github.sha }}
+  # Repository variables vars
+  REGISTRY_SERVER: ${{ vars.REGISTRY_SERVER }} # (Docker Hub => docker.io, ACR => <registry_name>.azurecr.io)
+  REGISTRY_NAMESPACE: ${{ vars.REGISTRY_NAMESPACE }} # e.g. your-dh-username or your-acr-repo-namespace
+  IMAGE_URI: ${{ vars.REGISTRY_SERVER }}/${{ vars.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} # Path to docker image
+  # i.e. docker.io/myusername/trend-tech-emporium-api:8743b52063cd84097a65d1633f5c74f5
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
+        continue-on-error: true # Delete when project isn't skeleton!!!
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_URI }}
+
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_URI }}
+            ${{ env.REGISTRY_SERVER }}/${{ env.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}:dev-latest
+
+      - name: Alert
+        run: |
+          echo "Image pushed: $IMAGE_URI" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: $GITHUB_REF_NAME" >> $GITHUB_STEP_SUMMARY

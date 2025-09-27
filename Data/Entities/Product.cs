@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace Data.Entities
     [Index(nameof(CategoryId))]
     public class Product : IValidatableObject
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Required, MaxLength(200)]
@@ -46,7 +49,7 @@ namespace Data.Entities
 
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
-        public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
+        public ICollection<WishListItem> WishListItems { get; set; } = new List<WishListItem>();
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {

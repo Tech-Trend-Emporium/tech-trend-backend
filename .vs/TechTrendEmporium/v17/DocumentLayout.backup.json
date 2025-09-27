@@ -1,12 +1,37 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\jdosman\\source\\repos\\TechTrendEmporium\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{89847D24-6C59-4410-9ACB-36EA10E55C43}|Infrastructure\\Infrastructure.csproj|c:\\endava\\endevlocal\\techtrendemporium\\infrastructure\\dbcontexts\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{89847D24-6C59-4410-9ACB-36EA10E55C43}|Infrastructure\\Infrastructure.csproj|solutionrelative:infrastructure\\dbcontexts\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\Infrastructure\\DbContexts\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "Infrastructure\\DbContexts\\AppDbContext.cs",
+              "ToolTip": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\Infrastructure\\DbContexts\\AppDbContext.cs",
+              "RelativeToolTip": "Infrastructure\\DbContexts\\AppDbContext.cs",
+              "ViewState": "AgIAAIAAAAAAAAAAAAAIwIkAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-27T06:29:09.232Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

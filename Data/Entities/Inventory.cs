@@ -12,6 +12,8 @@ namespace Data.Entities
     [Index(nameof(ProductId), IsUnique = true)]
     public class Inventory : IValidatableObject
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Range(0, int.MaxValue)]

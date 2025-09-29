@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations.Governance
 {
     [DbContext(typeof(GovernanceDbContext))]
-    [Migration("20250927061303_InitGovernance")]
+    [Migration("20250929153420_InitGovernance")]
     partial class InitGovernance
     {
         /// <inheritdoc />
@@ -64,7 +64,7 @@ namespace Infrastructure.Persistence.Migrations.Governance
 
                     b.HasIndex("State", "RequestedAt");
 
-                    b.ToTable("ApprovalJobs", (string)null);
+                    b.ToTable("approval_jobs", (string)null);
                 });
 #pragma warning restore 612, 618
         }

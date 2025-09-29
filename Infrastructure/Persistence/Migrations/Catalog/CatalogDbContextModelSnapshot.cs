@@ -46,7 +46,7 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("categories", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Inventory", b =>
@@ -71,7 +71,7 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.HasIndex("ProductId")
                         .IsUnique();
 
-                    b.ToTable("Inventories", (string)null);
+                    b.ToTable("inventories", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Product", b =>
@@ -120,7 +120,7 @@ namespace Infrastructure.Persistence.Migrations.Catalog
 
                     b.HasIndex("Title");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("products", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Review", b =>
@@ -151,7 +151,7 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.HasIndex("UserId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("reviews", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Inventory", b =>

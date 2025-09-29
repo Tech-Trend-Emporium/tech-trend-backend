@@ -13,7 +13,7 @@ namespace Infrastructure.Persistence.Migrations.Promotions
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Coupons",
+                name: "coupons",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -26,12 +26,12 @@ namespace Infrastructure.Persistence.Migrations.Promotions
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Coupons", x => x.Id);
+                    table.PrimaryKey("PK_coupons", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Coupons_Code",
-                table: "Coupons",
+                name: "IX_coupons_Code",
+                table: "coupons",
                 column: "Code",
                 unique: true);
         }
@@ -40,7 +40,7 @@ namespace Infrastructure.Persistence.Migrations.Promotions
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Coupons");
+                name: "coupons");
         }
     }
 }

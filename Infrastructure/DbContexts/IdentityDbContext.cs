@@ -15,8 +15,8 @@ namespace Data
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
-            mb.Entity<User>().ToTable("Users");
-            mb.Entity<Session>().ToTable("Sessions");
+            mb.Entity<User>().ToTable("users");
+            mb.Entity<Session>().ToTable("sessions");
 
             mb.Ignore<Product>();
             mb.Ignore<Category>();

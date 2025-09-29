@@ -17,10 +17,10 @@ namespace Data
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
-            mb.Entity<Product>().ToTable("Products");    
-            mb.Entity<Category>().ToTable("Categories");
-            mb.Entity<Inventory>().ToTable("Inventories");
-            mb.Entity<Review>().ToTable("Reviews");
+            mb.Entity<Product>().ToTable("products");    
+            mb.Entity<Category>().ToTable("categories");
+            mb.Entity<Inventory>().ToTable("inventories");
+            mb.Entity<Review>().ToTable("reviews");
 
             mb.Ignore<User>();
             mb.Ignore<Cart>();

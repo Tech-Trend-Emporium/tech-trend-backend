@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations.Promotions
 {
     [DbContext(typeof(PromotionsDbContext))]
-    [Migration("20250927060045_InitPromotions")]
+    [Migration("20250929153727_InitPromotions")]
     partial class InitPromotions
     {
         /// <inheritdoc />
@@ -60,7 +60,7 @@ namespace Infrastructure.Persistence.Migrations.Promotions
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Coupons", (string)null);
+                    b.ToTable("coupons", (string)null);
                 });
 #pragma warning restore 612, 618
         }

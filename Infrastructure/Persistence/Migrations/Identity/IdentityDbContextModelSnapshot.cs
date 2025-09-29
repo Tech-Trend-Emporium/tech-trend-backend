@@ -48,7 +48,7 @@ namespace Infrastructure.Persistence.Migrations.Identity
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Sessions", (string)null);
+                    b.ToTable("sessions", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.User", b =>
@@ -58,9 +58,6 @@ namespace Infrastructure.Persistence.Migrations.Identity
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CartId")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -91,9 +88,6 @@ namespace Infrastructure.Persistence.Migrations.Identity
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
-                    b.Property<int?>("WishListId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -102,7 +96,7 @@ namespace Infrastructure.Persistence.Migrations.Identity
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Session", b =>

@@ -61,7 +61,7 @@ namespace Infrastructure.Persistence.Migrations.Governance
 
                     b.HasIndex("State", "RequestedAt");
 
-                    b.ToTable("ApprovalJobs", (string)null);
+                    b.ToTable("approval_jobs", (string)null);
                 });
 #pragma warning restore 612, 618
         }

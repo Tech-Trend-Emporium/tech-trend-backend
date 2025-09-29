@@ -13,7 +13,7 @@ namespace Infrastructure.Persistence.Migrations.Governance
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "ApprovalJobs",
+                name: "approval_jobs",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -28,22 +28,22 @@ namespace Infrastructure.Persistence.Migrations.Governance
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ApprovalJobs", x => x.Id);
+                    table.PrimaryKey("PK_approval_jobs", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApprovalJobs_DecidedBy",
-                table: "ApprovalJobs",
+                name: "IX_approval_jobs_DecidedBy",
+                table: "approval_jobs",
                 column: "DecidedBy");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApprovalJobs_RequestedBy",
-                table: "ApprovalJobs",
+                name: "IX_approval_jobs_RequestedBy",
+                table: "approval_jobs",
                 column: "RequestedBy");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ApprovalJobs_State_RequestedAt",
-                table: "ApprovalJobs",
+                name: "IX_approval_jobs_State_RequestedAt",
+                table: "approval_jobs",
                 columns: new[] { "State", "RequestedAt" });
         }
 
@@ -51,7 +51,7 @@ namespace Infrastructure.Persistence.Migrations.Governance
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ApprovalJobs");
+                name: "approval_jobs");
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Infrastructure.Persistence.Migrations.Shopping
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Carts",
+                name: "carts",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -24,11 +24,11 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Carts", x => x.Id);
+                    table.PrimaryKey("PK_carts", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WishLists",
+                name: "wish_lists",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -38,11 +38,11 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WishLists", x => x.Id);
+                    table.PrimaryKey("PK_wish_lists", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "CartItems",
+                name: "cart_items",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -53,17 +53,17 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CartItems", x => x.Id);
+                    table.PrimaryKey("PK_cart_items", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CartItems_Carts_CartId",
+                        name: "FK_cart_items_carts_CartId",
                         column: x => x.CartId,
-                        principalTable: "Carts",
+                        principalTable: "carts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "WishListItems",
+                name: "wish_list_items",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -74,36 +74,36 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_WishListItems", x => x.Id);
+                    table.PrimaryKey("PK_wish_list_items", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WishListItems_WishLists_WishListId",
+                        name: "FK_wish_list_items_wish_lists_WishListId",
                         column: x => x.WishListId,
-                        principalTable: "WishLists",
+                        principalTable: "wish_lists",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_CartItems_CartId_ProductId",
-                table: "CartItems",
+                name: "IX_cart_items_CartId_ProductId",
+                table: "cart_items",
                 columns: new[] { "CartId", "ProductId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Carts_UserId",
-                table: "Carts",
+                name: "IX_carts_UserId",
+                table: "carts",
                 column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_WishListItems_WishListId_ProductId",
-                table: "WishListItems",
+                name: "IX_wish_list_items_WishListId_ProductId",
+                table: "wish_list_items",
                 columns: new[] { "WishListId", "ProductId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_WishLists_UserId",
-                table: "WishLists",
+                name: "IX_wish_lists_UserId",
+                table: "wish_lists",
                 column: "UserId",
                 unique: true);
         }
@@ -112,16 +112,16 @@ namespace Infrastructure.Persistence.Migrations.Shopping
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "CartItems");
+                name: "cart_items");
 
             migrationBuilder.DropTable(
-                name: "WishListItems");
+                name: "wish_list_items");
 
             migrationBuilder.DropTable(
-                name: "Carts");
+                name: "carts");
 
             migrationBuilder.DropTable(
-                name: "WishLists");
+                name: "wish_lists");
         }
     }
 }

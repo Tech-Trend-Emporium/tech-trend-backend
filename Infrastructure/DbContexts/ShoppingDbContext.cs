@@ -17,10 +17,10 @@ namespace Data
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
-            mb.Entity<Cart>().ToTable("Carts");
-            mb.Entity<CartItem>().ToTable("CartItems");
-            mb.Entity<WishList>().ToTable("WishLists");
-            mb.Entity<WishListItem>().ToTable("WishListItems");
+            mb.Entity<Cart>().ToTable("carts");
+            mb.Entity<CartItem>().ToTable("cart_items");
+            mb.Entity<WishList>().ToTable("wish_lists");
+            mb.Entity<WishListItem>().ToTable("wish_list_items");
 
             mb.Ignore<User>();        
             mb.Ignore<Session>();     

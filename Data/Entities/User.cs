@@ -39,10 +39,8 @@ namespace Data.Entities
 
         public DateTime? UpdatedAt { get; set; }
 
-        public int? WishListId { get; set; }
         public WishList? WishList { get; set; }
 
-        public int? CartId { get; set; }
         public Cart? Cart { get; set; }
 
         public ICollection<Session> Sessions { get; set; } = new List<Session>();

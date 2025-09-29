@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations.App
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250927063528_InitApp")]
+    [Migration("20250929145454_InitApp")]
     partial class InitApp
     {
         /// <inheritdoc />
@@ -62,7 +62,7 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("State", "RequestedAt");
 
-                    b.ToTable("ApprovalJobs", (string)null);
+                    b.ToTable("approval_jobs", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Cart", b =>
@@ -76,9 +76,6 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int?>("CouponId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("CouponId1")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -89,12 +86,10 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("CouponId");
 
-                    b.HasIndex("CouponId1");
-
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Carts", (string)null);
+                    b.ToTable("carts", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.CartItem", b =>
@@ -121,7 +116,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("CartItems", (string)null);
+                    b.ToTable("cart_items", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Category", b =>
@@ -148,7 +143,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("categories", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Coupon", b =>
@@ -182,7 +177,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Coupons", (string)null);
+                    b.ToTable("coupons", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Inventory", b =>
@@ -207,7 +202,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("ProductId")
                         .IsUnique();
 
-                    b.ToTable("Inventories", (string)null);
+                    b.ToTable("inventories", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Product", b =>
@@ -256,7 +251,7 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("Title");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("products", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Review", b =>
@@ -287,7 +282,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("UserId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("reviews", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.Session", b =>
@@ -314,7 +309,7 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Sessions", (string)null);
+                    b.ToTable("sessions", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.User", b =>
@@ -324,12 +319,6 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CartId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("CartId1")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -358,15 +347,7 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
-                    b.Property<int?>("WishListId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("WishListId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("CartId1");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -374,9 +355,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.HasIndex("WishListId1");
-
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.WishList", b =>
@@ -398,7 +377,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("WishLists", (string)null);
+                    b.ToTable("wish_lists", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.WishListItem", b =>
@@ -425,7 +404,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.HasIndex("WishListId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("WishListItems", (string)null);
+                    b.ToTable("wish_list_items", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.ApprovalJob", b =>
@@ -449,17 +428,13 @@ namespace Infrastructure.Persistence.Migrations.App
             modelBuilder.Entity("Data.Entities.Cart", b =>
                 {
                     b.HasOne("Data.Entities.Coupon", "Coupon")
-                        .WithMany()
+                        .WithMany("Carts")
                         .HasForeignKey("CouponId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("Data.Entities.Coupon", null)
-                        .WithMany("Carts")
-                        .HasForeignKey("CouponId1");
-
                     b.HasOne("Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .WithOne("Cart")
+                        .HasForeignKey("Data.Entities.Cart", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -539,26 +514,11 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Data.Entities.User", b =>
-                {
-                    b.HasOne("Data.Entities.Cart", "Cart")
-                        .WithMany()
-                        .HasForeignKey("CartId1");
-
-                    b.HasOne("Data.Entities.WishList", "WishList")
-                        .WithMany()
-                        .HasForeignKey("WishListId1");
-
-                    b.Navigation("Cart");
-
-                    b.Navigation("WishList");
-                });
-
             modelBuilder.Entity("Data.Entities.WishList", b =>
                 {
                     b.HasOne("Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .WithOne("WishList")
+                        .HasForeignKey("Data.Entities.WishList", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -612,6 +572,8 @@ namespace Infrastructure.Persistence.Migrations.App
 
             modelBuilder.Entity("Data.Entities.User", b =>
                 {
+                    b.Navigation("Cart");
+
                     b.Navigation("DecidedJobs");
 
                     b.Navigation("RequestedJobs");
@@ -619,6 +581,8 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Navigation("Reviews");
 
                     b.Navigation("Sessions");
+
+                    b.Navigation("WishList");
                 });
 
             modelBuilder.Entity("Data.Entities.WishList", b =>

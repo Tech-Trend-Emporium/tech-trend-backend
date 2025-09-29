@@ -13,7 +13,7 @@ namespace Infrastructure.Persistence.Migrations.Catalog
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Categories",
+                name: "categories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -24,11 +24,11 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Categories", x => x.Id);
+                    table.PrimaryKey("PK_categories", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "products",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -45,17 +45,17 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_products", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Products_Categories_CategoryId",
+                        name: "FK_products_categories_CategoryId",
                         column: x => x.CategoryId,
-                        principalTable: "Categories",
+                        principalTable: "categories",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Inventories",
+                name: "inventories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -66,17 +66,17 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Inventories", x => x.Id);
+                    table.PrimaryKey("PK_inventories", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Inventories_Products_ProductId",
+                        name: "FK_inventories_products_ProductId",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Reviews",
+                name: "reviews",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -88,45 +88,45 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Reviews", x => x.Id);
+                    table.PrimaryKey("PK_reviews", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Reviews_Products_ProductId",
+                        name: "FK_reviews_products_ProductId",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Categories_Name",
-                table: "Categories",
+                name: "IX_categories_Name",
+                table: "categories",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Inventories_ProductId",
-                table: "Inventories",
+                name: "IX_inventories_ProductId",
+                table: "inventories",
                 column: "ProductId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_CategoryId",
-                table: "Products",
+                name: "IX_products_CategoryId",
+                table: "products",
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_Title",
-                table: "Products",
+                name: "IX_products_Title",
+                table: "products",
                 column: "Title");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_ProductId",
-                table: "Reviews",
+                name: "IX_reviews_ProductId",
+                table: "reviews",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_UserId_ProductId",
-                table: "Reviews",
+                name: "IX_reviews_UserId_ProductId",
+                table: "reviews",
                 columns: new[] { "UserId", "ProductId" },
                 unique: true);
         }
@@ -135,16 +135,16 @@ namespace Infrastructure.Persistence.Migrations.Catalog
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Inventories");
+                name: "inventories");
 
             migrationBuilder.DropTable(
-                name: "Reviews");
+                name: "reviews");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "products");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "categories");
         }
     }
 }

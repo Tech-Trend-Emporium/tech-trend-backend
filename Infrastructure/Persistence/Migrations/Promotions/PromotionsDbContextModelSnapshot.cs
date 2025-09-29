@@ -57,7 +57,7 @@ namespace Infrastructure.Persistence.Migrations.Promotions
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Coupons", (string)null);
+                    b.ToTable("coupons", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -14,7 +14,7 @@ namespace Data
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
-            mb.Entity<Coupon>().ToTable("Coupons");
+            mb.Entity<Coupon>().ToTable("coupons");
 
             mb.Ignore<Cart>();
             mb.Ignore<CartItem>();

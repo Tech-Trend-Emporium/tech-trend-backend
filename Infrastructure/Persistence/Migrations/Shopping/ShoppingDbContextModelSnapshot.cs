@@ -46,7 +46,7 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("Carts", (string)null);
+                    b.ToTable("carts", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.CartItem", b =>
@@ -71,7 +71,7 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                     b.HasIndex("CartId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("CartItems", (string)null);
+                    b.ToTable("cart_items", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.WishList", b =>
@@ -93,7 +93,7 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("WishLists", (string)null);
+                    b.ToTable("wish_lists", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.WishListItem", b =>
@@ -120,7 +120,7 @@ namespace Infrastructure.Persistence.Migrations.Shopping
                     b.HasIndex("WishListId", "ProductId")
                         .IsUnique();
 
-                    b.ToTable("WishListItems", (string)null);
+                    b.ToTable("wish_list_items", (string)null);
                 });
 
             modelBuilder.Entity("Data.Entities.CartItem", b =>

@@ -14,7 +14,7 @@ namespace Data
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
-            mb.Entity<ApprovalJob>().ToTable("ApprovalJobs");
+            mb.Entity<ApprovalJob>().ToTable("approval_jobs");
 
             mb.Ignore<User>();
             mb.Ignore<Session>();

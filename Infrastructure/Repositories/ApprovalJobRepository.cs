@@ -1,38 +1,23 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class ApprovalJobRepository : IApprovalJobRepository
+    public class ApprovalJobRepository : EfRepository<ApprovalJob>, IApprovalJobRepository
     {
-        public Task<ApprovalJob> AddAsync(ApprovalJob entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public ApprovalJobRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<ApprovalJob>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ApprovalJob?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ApprovalJob> UpdateAsync(ApprovalJob entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

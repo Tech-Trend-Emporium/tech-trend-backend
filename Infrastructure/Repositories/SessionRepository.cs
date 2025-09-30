@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class SessionRepository : ISessionRepository
+    public class SessionRepository : EfRepository<Session>, ISessionRepository
     {
-        public Task<Session> AddAsync(Session entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public SessionRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Session>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Session?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Session> UpdateAsync(Session entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

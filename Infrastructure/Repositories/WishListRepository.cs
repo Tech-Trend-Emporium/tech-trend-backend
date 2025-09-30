@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class WishListRepository : IWishListRepository
+    public class WishListRepository : EfRepository<WishList>, IWishListRepository
     {
-        public Task<WishList> AddAsync(WishList entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public WishListRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<WishList>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<WishList?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<WishList> UpdateAsync(WishList entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class ProductRepository : IProductRepository
+    public class ProductRepository : EfRepository<Product>, IProductRepository
     {
-        public Task<Product> AddAsync(Product entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public ProductRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Product>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Product?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Product> UpdateAsync(Product entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

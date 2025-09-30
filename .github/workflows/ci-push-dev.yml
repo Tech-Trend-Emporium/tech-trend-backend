@@ -52,19 +52,18 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
-
-      - name: List files in the working directory
         run: |
-          ls -R
+          echo "Tests are being executed..."
+          dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
+          echo "Tests succesfully done"
           
-      - name: Publish test results
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: .NET Tests (development)
-          path: "**/test_results.trx"
-          reporter: dotnet-trx
+#      - name: Publish test results
+#        if: always()
+#        uses: dorny/test-reporter@v1
+#        with:
+#          name: .NET Tests (development)
+#          path: "**/test_results.trx"
+#          reporter: dotnet-trx
 
       - name: Azure login (service principal)
         uses: azure/login@v2

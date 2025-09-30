@@ -1,37 +1,12 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{7D6CC501-3B83-403C-9E31-2A16A3434B9F}|TechTrendEmporium\\API.csproj|c:\\endava\\endevlocal\\techtrendemporium\\techtrendemporium\\docker-compose.yml||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{7D6CC501-3B83-403C-9E31-2A16A3434B9F}|TechTrendEmporium\\API.csproj|solutionrelative:techtrendemporium\\docker-compose.yml||{8B382828-6202-11D1-8870-0000F87579D2}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": [
-        {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
-          "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "docker-compose.yml",
-              "DocumentMoniker": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\TechTrendEmporium\\docker-compose.yml",
-              "RelativeDocumentMoniker": "TechTrendEmporium\\docker-compose.yml",
-              "ToolTip": "C:\\Endava\\EndevLocal\\TechTrendEmporium\\TechTrendEmporium\\docker-compose.yml",
-              "RelativeToolTip": "TechTrendEmporium\\docker-compose.yml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAApAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
-              "WhenOpened": "2025-09-30T04:09:55.159Z",
-              "EditorCaption": ""
-            }
-          ]
-        }
-      ]
+      "DocumentGroups": []
     }
   ]
 }

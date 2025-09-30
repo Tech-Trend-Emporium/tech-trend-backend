@@ -53,7 +53,7 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (Count is < 0) yield return new ValidationResult("Count no puede ser negativo", new[] { nameof(Count) });
+            if (Count is < 0) yield return new ValidationResult("The field Count cannot be negative.", new[] { nameof(Count) });
         }
     }
 }

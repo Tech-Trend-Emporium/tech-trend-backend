@@ -29,7 +29,7 @@ namespace Data.Entities
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
             if (LogoutAt.HasValue && LogoutAt < LoginAt)
-                yield return new ValidationResult("LogoutAt no puede ser anterior a LoginAt", new[] { nameof(LogoutAt), nameof(LoginAt) });
+                yield return new ValidationResult("The field LogoutAt cannot be before LoginAt field.", new[] { nameof(LogoutAt), nameof(LoginAt) });
         }
     }
 }

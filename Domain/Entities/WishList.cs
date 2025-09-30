@@ -28,7 +28,7 @@ namespace Data.Entities
         public void AddItem(int productId)
         {
             if (Items.Any(i => i.ProductId == productId))
-                throw new InvalidOperationException("El producto ya está en la lista.");
+                throw new InvalidOperationException("The product is already in the wish list.");
 
             Items.Add(new WishListItem { ProductId = productId, WishList = this });
         }

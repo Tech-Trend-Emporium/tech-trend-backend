@@ -29,7 +29,7 @@ namespace Data.Entities
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
             if (Available > Total)
-                yield return new ValidationResult("Available no puede ser mayor que Total", new[] { nameof(Available), nameof(Total) });
+                yield return new ValidationResult("The field Available cannot be greater than Total field.", new[] { nameof(Available), nameof(Total) });
         }
     }
 }

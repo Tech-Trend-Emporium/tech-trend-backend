@@ -39,13 +39,13 @@ namespace Data.Entities
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
             if (DecidedAt.HasValue && !DecidedBy.HasValue)
-                yield return new ValidationResult("DecidedAt requiere DecidedBy.", new[] { nameof(DecidedAt), nameof(DecidedBy) });
+                yield return new ValidationResult("The field DecidedAt requires DecidedBy.", new[] { nameof(DecidedAt), nameof(DecidedBy) });
 
             if (DecidedAt.HasValue && DecidedAt < RequestedAt)
-                yield return new ValidationResult("DecidedAt no puede ser anterior a RequestedAt.", new[] { nameof(DecidedAt), nameof(RequestedAt) });
+                yield return new ValidationResult("The field DecidedAt cannot be before RequestedAt field.", new[] { nameof(DecidedAt), nameof(RequestedAt) });
 
             if (DecidedBy.HasValue && DecidedBy == RequestedBy)
-                yield return new ValidationResult("DecidedBy no puede ser el mismo que RequestedBy.", new[] { nameof(DecidedBy), nameof(RequestedBy) });
+                yield return new ValidationResult("The field DecidedBy cannot be the same as RequestedBy field.", new[] { nameof(DecidedBy), nameof(RequestedBy) });
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Data.Entities
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
             if (ValidTo.HasValue && ValidTo < ValidFrom)
-                yield return new ValidationResult("ValidTo debe ser posterior a ValidFrom", new[] { nameof(ValidTo), nameof(ValidFrom) });
+                yield return new ValidationResult("The field ValidTo must be after ValidFrom field.", new[] { nameof(ValidTo), nameof(ValidFrom) });
         }
     }
 }

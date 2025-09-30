@@ -31,7 +31,7 @@ namespace Data.Entities
         public void AddItem(int productId)
         {
             if (Items.Any(i => i.ProductId == productId))
-                throw new InvalidOperationException("El producto ya está en el carrito.");
+                throw new InvalidOperationException("The product is already in the cart.");
 
             Items.Add(new CartItem { ProductId = productId, Cart = this });
         }

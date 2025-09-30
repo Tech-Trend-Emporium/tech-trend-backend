@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class ReviewRepository : IReviewRepository
+    public class ReviewRepository : EfRepository<Review>, IReviewRepository
     {
-        public Task<Review> AddAsync(Review entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public ReviewRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Review>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Review?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Review> UpdateAsync(Review entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

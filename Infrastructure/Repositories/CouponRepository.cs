@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class CouponRepository : ICouponRepository
+    public class CouponRepository : EfRepository<Coupon>, ICouponRepository
     {
-        public Task<Coupon> AddAsync(Coupon entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public CouponRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Coupon>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Coupon?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Coupon> UpdateAsync(Coupon entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

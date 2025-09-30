@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class CartRepository : ICartRepository
+    public class CartRepository : EfRepository<Cart>, ICartRepository
     {
-        public Task<Cart> AddAsync(Cart entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public CartRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Cart>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Cart?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Cart> UpdateAsync(Cart entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

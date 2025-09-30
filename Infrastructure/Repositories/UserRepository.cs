@@ -1,5 +1,7 @@
 ﻿using Application.Abstraction;
 using Data.Entities;
+using Infrastructure.DbContexts;
+using Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,31 +10,13 @@ using System.Threading.Tasks;
 
 namespace Application.Repository
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : EfRepository<User>, IUserRepository
     {
-        public Task<User> AddAsync(User entity)
-        {
-            throw new NotImplementedException();
-        }
+        private readonly AppDbContext _db;
 
-        public Task<bool> DeleteAsync(int id)
+        public UserRepository(AppDbContext db) : base(db)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<User>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<User?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<User> UpdateAsync(User entity)
-        {
-            throw new NotImplementedException();
+            _db = db;
         }
     }
 }

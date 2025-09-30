@@ -25,9 +25,6 @@ namespace General.Mappers
             if (entity is null) throw new ArgumentNullException(nameof(entity));
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
-            if (entity.Id != dto.Id)
-                throw new InvalidOperationException("The entity ID does not match the DTO ID.");
-
             entity.Name = dto.Name.Trim();
             entity.UpdatedAt = DateTime.UtcNow;
         }

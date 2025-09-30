@@ -3,7 +3,7 @@ version: "3.9"
 services:
   postgres:
     image: postgres:16
-    container_name: myapp-postgres
+    container_name: techtrend-postgres
     environment:
       POSTGRES_DB: techtrend_db
       POSTGRES_USER: techtrend_user
@@ -13,7 +13,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myapp -d myapp_db"]
+      test: ["CMD-SHELL", "pg_isready -U techtrend_user -d techtrend_db"]
       interval: 5s
       timeout: 3s
       retries: 10

@@ -54,6 +54,10 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
 
+      - name: List files in the working directory
+        run: |
+          ls -R
+          
       - name: Publish test results
         if: always()
         uses: dorny/test-reporter@v1

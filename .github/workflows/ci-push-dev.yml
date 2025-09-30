@@ -89,16 +89,16 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./TechTrendEmporium          # <— build context is the folder that contains the sln + projects
-          file: ./TechTrendEmporium/Dockerfile  # <— Dockerfile lives here
+          context: ./TechTrendEmporium
+          file: ./TechTrendEmporium/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_CONFIGURATION=Release
-            PROJECT_PATH=API/TechTrendEmporium.API.csproj
-            PROJECT_DLL=TechTrendEmporium.API.dll
-
+            # Optional overrides if your names differ:
+            # API_PROJECT_GLOB=*Shopping.Api.csproj
+            # API_DLL_GLOB=*Shopping.Api.dll
 
       - name: Alert on image push
         run: |

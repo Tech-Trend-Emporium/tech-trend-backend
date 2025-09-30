@@ -12,7 +12,7 @@ env:
   ACR_NAME: ${{ secrets.ACR_NAME }}
   REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
   IMAGE_NAME: trendtech-emporium/api
-  DOTNET_VERSION: "8.0.0"
+  DOTNET_VERSION: "8.0.x"
 
 permissions:
   contents: read

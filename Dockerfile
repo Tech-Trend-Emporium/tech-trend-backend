@@ -1,41 +1,41 @@
 # syntax=docker/dockerfile:1.6
 
-# --- Build stage ---
 ARG DOTNET_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 
-# Build-time args you can override from the workflow
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
+SHELL ["/bin/bash","-c"]
+
+# Build-time knobs (override via build-args if needed)
 ARG BUILD_CONFIGURATION=Release
-# Path to the API .csproj (relative to repo root)
-ARG PROJECT_PATH=API/TechTrendEmporium.API.csproj
+# Match your API project file (any depth). Adjust if your API project doesn't end in .API.csproj
+ARG API_PROJECT_GLOB="*API.csproj"
 
 WORKDIR /src
 
-# Copy solution and project files first to maximize layer caching
-# Adjust these COPY lines if your folder names differ.
-COPY TechTrendEmporium.sln ./
-COPY API/*.csproj ./API/
-COPY Application/*.csproj ./Application/
-COPY Domain/*.csproj ./Domain/
-COPY Infrastructure/*.csproj ./Infrastructure/
-
-# Restore dependencies
-RUN dotnet restore ${PROJECT_PATH}
-
-# Now copy the entire repo and publish
+# Because the build context is the TechTrendEmporium folder, copy everything from there.
 COPY . .
-RUN dotnet publish ${PROJECT_PATH} -c ${BUILD_CONFIGURATION} -o /app/publish /p:UseAppHost=false
 
-# --- Runtime stage ---
+# Restore via the solution if present (helps cache); otherwise we’ll restore during publish anyway.
+RUN if [[ -f TechTrendEmporium.sln ]]; then dotnet restore TechTrendEmporium.sln; else echo "No solution file found (ok)"; fi
+
+# Discover the API project and publish it
+RUN set -euo pipefail; \
+    PROJECT_PATH=$(find . -type f -name "${API_PROJECT_GLOB}" | head -n1); \
+    if [[ -z "$PROJECT_PATH" ]]; then echo "Could not find API project matching ${API_PROJECT_GLOB}" >&2; exit 1; fi; \
+    echo "Using API project: $PROJECT_PATH"; \
+    dotnet publish "$PROJECT_PATH" -c "${BUILD_CONFIGURATION}" -o /app/publish /p:UseAppHost=false
+
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS final
 WORKDIR /app
 
-# Container-friendly default for ASP.NET Core
+# Default ASP.NET Core port
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-# Name of the built DLL to run (override if different)
-ARG PROJECT_DLL=TechTrendEmporium.API.dll
+# Find the API DLL automatically at runtime
+ARG API_DLL_GLOB="*.API.dll"
 
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "${PROJECT_DLL}"]
+
+# Start the first *.API.dll we find
+ENTRYPOINT ["/bin/bash","-lc","exec dotnet \"$(ls ${API_DLL_GLOB} | head -n1)\""]

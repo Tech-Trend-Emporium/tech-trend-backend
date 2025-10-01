@@ -1,4 +1,5 @@
 ﻿using Data.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 
@@ -8,6 +9,7 @@ namespace Infrastructure.DbContexts
     {
         public DbSet<User> Users => Set<User>();
         public DbSet<Session> Sessions => Set<Session>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<Product> Products => Set<Product>();
         public DbSet<Inventory> Inventories => Set<Inventory>();
@@ -23,6 +25,7 @@ namespace Infrastructure.DbContexts
         {
             mb.Entity<User>().ToTable("users");
             mb.Entity<Session>().ToTable("sessions");
+            mb.Entity<RefreshToken>().ToTable("refresh_tokens");
             mb.Entity<Category>().ToTable("categories");
             mb.Entity<Product>().ToTable("products");
             mb.Entity<Inventory>().ToTable("inventories");
@@ -34,6 +37,8 @@ namespace Infrastructure.DbContexts
             mb.Entity<Coupon>().ToTable("coupons");
             mb.Entity<ApprovalJob>().ToTable("approval_jobs");
 
+            mb.Entity<User>().Property(u => u.Role).HasConversion<int>();
+
             // Session -> User (N:1)
             mb.Entity<Session>()
               .HasOne(s => s.User)
@@ -43,6 +48,22 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<User>().HasIndex(u => u.Email).IsUnique();
             mb.Entity<User>().HasIndex(u => u.Username).IsUnique();
+
+            // RefreshToken -> User (N:1)
+            mb.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // RefreshToken -> Session (N:1)
+            mb.Entity<RefreshToken>()
+                .HasOne(rt => rt.Session)
+                .WithMany()
+                .HasForeignKey(rt => rt.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            mb.Entity<RefreshToken>().HasIndex(rt => rt.Token).IsUnique();
 
             // Product -> Category (N:1)
             mb.Entity<Product>()

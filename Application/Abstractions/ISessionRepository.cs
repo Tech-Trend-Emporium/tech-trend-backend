@@ -9,5 +9,6 @@ namespace Application.Abstraction
 {
     public interface ISessionRepository : IEfRepository<Session>
     {
+        Task<List<Session>> GetActiveByUserAsync(int userId, CancellationToken ct = default);
     }
 }

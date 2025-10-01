@@ -1,4 +1,5 @@
-﻿using Domain.Enums;
+﻿using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -39,11 +40,16 @@ namespace Data.Entities
 
         public DateTime? UpdatedAt { get; set; }
 
+        [MaxLength(64)]
+        public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
         public WishList? WishList { get; set; }
 
         public Cart? Cart { get; set; }
 
         public ICollection<Session> Sessions { get; set; } = new List<Session>();
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<ApprovalJob> RequestedJobs { get; set; } = new List<ApprovalJob>();
         public ICollection<ApprovalJob> DecidedJobs { get; set; } = new List<ApprovalJob>();

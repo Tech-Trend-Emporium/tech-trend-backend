@@ -70,42 +70,48 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Ensure we are targeting the exact registry host (no https://, no trailing slash)
+      - name: Sanity check registry host
+        run: |
+          echo "ACR_NAME=${{ secrets.ACR_NAME }}"
+          echo "ACR_LOGIN_SERVER=${{ secrets.ACR_LOGIN_SERVER }}"
+          if [[ "${{ secrets.ACR_LOGIN_SERVER }}" == *"://"* ]]; then
+            echo "ERROR: ACR_LOGIN_SERVER must be like 'tteacr.azurecr.io' (no https://)"; exit 1;
+          fi
+
+      # Perform docker login using ACR refresh token (AAD) for THIS registry host
       - name: ACR docker login via AAD refresh token
         env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}                # e.g. tteacr
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}# e.g. tteacr.azurecr.io
+          ACR_NAME: ${{ secrets.ACR_NAME }}                  # e.g. tteacr
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}  # e.g. tteacr.azurecr.io
         run: |
-          # This returns an ACR REFRESH TOKEN (expected)
           REFRESH_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
-          # Login to the registry with dummy username and the refresh token as password
-          echo "$REFRESH_TOKEN" | docker login "$ACR_LOGIN_SERVER" -u 00000000-0000-0000-0000-000000000000 --password-stdin
-          # Quick sanity check: print registry (no secrets)
-          echo "Logged in to $ACR_LOGIN_SERVER"
+          echo "$REFRESH_TOKEN" | docker login "$ACR_LOGIN_SERVER" \
+            -u 00000000-0000-0000-0000-000000000000 --password-stdin
+          echo "docker login to $ACR_LOGIN_SERVER completed"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # MUST match the registry host we just logged into
           images: ${{ secrets.ACR_LOGIN_SERVER }}/trendtech-emporium/api
           tags: |
             type=sha,format=short
             type=ref,event=branch
             type=raw,value=${{ github.run_number }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-            context: .
-            file: ./Dockerfile
-            push: true
-            tags: ${{ steps.meta.outputs.tags }}
-            labels: ${{ steps.meta.outputs.labels }}
-            build-args: |
-                BUILD_CONFIGURATION=Release
-
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Alert on image push
         run: |

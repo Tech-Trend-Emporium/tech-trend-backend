@@ -70,10 +70,17 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: ACR docker login (AAD)
+      - name: ACR docker login via AAD refresh token
+        env:
+          ACR_NAME: ${{ secrets.ACR_NAME }}                # e.g. tteacr
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}# e.g. tteacr.azurecr.io
         run: |
-          ACCESS_TOKEN=$(az acr login --name ${{ secrets.ACR_NAME }} --expose-token --output tsv --query accessToken)
-          echo $ACCESS_TOKEN | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u 00000000-0000-0000-0000-000000000000 --password-stdin
+          # This returns an ACR REFRESH TOKEN (expected)
+          REFRESH_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
+          # Login to the registry with dummy username and the refresh token as password
+          echo "$REFRESH_TOKEN" | docker login "$ACR_LOGIN_SERVER" -u 00000000-0000-0000-0000-000000000000 --password-stdin
+          # Quick sanity check: print registry (no secrets)
+          echo "Logged in to $ACR_LOGIN_SERVER"
 
       - name: Docker metadata
         id: meta

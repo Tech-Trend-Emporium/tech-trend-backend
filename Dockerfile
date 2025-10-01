@@ -3,31 +3,26 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# 1) Copy solution + project files AND central NuGet/props files first
+# Copy solution & project files first (for restore cache)
 COPY TechTrendEmporium.sln ./
 COPY TechTrendEmporium/*.csproj TechTrendEmporium/
 COPY Application/*.csproj Application/
 COPY Domain/*.csproj Domain/
 COPY Infrastructure/*.csproj Infrastructure/
 
-# Central package & config files (copy only if they exist in your repo)
-# Add/remove lines as needed for your repo.
-COPY NuGet.config* ./
-COPY Directory.Packages.props ./
-COPY Directory.Build.props ./
-COPY Directory.Build.targets ./
+# If you actually have NuGet.config at root, you can add:
+# COPY NuGet.config ./
 
-# 2) Restore with all metadata present
+# First restore (projects are visible now)
 RUN dotnet restore TechTrendEmporium.sln
 
-# 3) Now copy the rest of the source
+# Copy the rest of the source
 COPY . .
 
-# (Optional but robust) Run restore again after full copy.
-# This is quick if cache is warm and guarantees analyzers/etc. are present.
+# Second restore (cheap if cached; ensures analyzers/props included)
 RUN dotnet restore TechTrendEmporium.sln
 
-# 4) Build & publish the API project explicitly
+# Build & publish API
 RUN dotnet build TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore
 RUN dotnet publish TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-build
 

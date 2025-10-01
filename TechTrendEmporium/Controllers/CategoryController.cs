@@ -21,9 +21,8 @@ namespace API.Controllers
         public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
             var result = await _categoryService.GetByIdAsync(id, ct);
-            if (result == null) return NotFound();
 
-            return Ok(result);
+            return result is null ? NotFound() : Ok(result);
         }
 
         [HttpGet]
@@ -37,11 +36,8 @@ namespace API.Controllers
 
         [HttpPost]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             var created = await _categoryService.CreateAsync(dto, ct);
 
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
@@ -49,11 +45,8 @@ namespace API.Controllers
 
         [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             var updated = await _categoryService.UpdateAsync(id, dto, ct);
 
             return Ok(updated);
@@ -61,14 +54,11 @@ namespace API.Controllers
 
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
             var deleted = await _categoryService.DeleteAsync(id, ct);
-            if (!deleted) return NotFound();
 
-            return NoContent();
+            return deleted ? NoContent() : NotFound();
         }
-
     }
 }

@@ -89,18 +89,16 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./TechTrendEmporium
-          file: ./TechTrendEmporium/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BUILD_CONFIGURATION=Release
-            # Optional overrides if your names differ:
-            # API_PROJECT_GLOB=*Shopping.Api.csproj
-            # API_DLL_GLOB=*Shopping.Api.dll
+            context: .
+            file: ./Dockerfile
+            push: true
+            tags: ${{ steps.meta.outputs.tags }}
+            labels: ${{ steps.meta.outputs.labels }}
+            build-args: |
+                BUILD_CONFIGURATION=Release
+
 
       - name: Alert on image push
         run: |
-          echo "Pushed tags: ${{ steps.meta.outputs.tags }}"
+            echo "Pushed tags: ${{ steps.meta.outputs.tags }}"
 

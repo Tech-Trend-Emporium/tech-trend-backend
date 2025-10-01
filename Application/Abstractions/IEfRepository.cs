@@ -14,10 +14,10 @@ namespace Application.Abstraction
         Task<IReadOnlyList<T>> ListAsync(Expression<Func<T, bool>> predicate, int skip = 0, int take = 50, CancellationToken ct = default);
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default);
         Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default);
+        Task<bool> DeleteByIdAsync(CancellationToken ct = default, params object[] keyValues);
 
         void Add(T entity);
         void Update(T entity);
         void Remove(T entity);
-        Task<bool> DeleteByIdAsync(CancellationToken ct = default, params object[] keyValues);
     }
 }

@@ -1,11 +1,14 @@
 ﻿using Application.Services;
+using Asp.Versioning;
 using General.Dto.Category;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
@@ -34,6 +37,7 @@ namespace API.Controllers
             return Ok(new { Total = total, Items = items });
         }
 
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpPost]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody] CreateCategoryRequest dto, CancellationToken ct)
@@ -52,6 +56,7 @@ namespace API.Controllers
             return Ok(updated);
         }
 
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Delete(int id, CancellationToken ct)

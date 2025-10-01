@@ -1,7 +1,7 @@
 ﻿using Application.Exceptions;
 using System.Text.Json;
 
-namespace API.Middleware
+namespace API.Middlewares
 {
     public class ExceptionHandlingMiddleware
     {
@@ -33,6 +33,8 @@ namespace API.Middleware
                 NotFoundException => (StatusCodes.Status404NotFound, "Not Found", "https://httpstatuses.io/404", (object?)null),
                 ConflictException => (StatusCodes.Status409Conflict, "Conflict", "https://httpstatuses.io/409", (object?)null),
                 ValidationException vex => (StatusCodes.Status400BadRequest, "Validation Error", "https://httpstatuses.io/400", new { errors = vex.Errors }),
+                UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized", "https://httpstatuses.io/401", (object?)null),
+                BadRequestException => (StatusCodes.Status400BadRequest, "Bad Request", "https://httpstatuses.io/400", (object?)null),
                 DomainException => (StatusCodes.Status400BadRequest, "Domain Error", "https://httpstatuses.io/400", (object?)null),
                 _ => (StatusCodes.Status500InternalServerError, "Internal Server Error", "https://httpstatuses.io/500", (object?)null)
             };

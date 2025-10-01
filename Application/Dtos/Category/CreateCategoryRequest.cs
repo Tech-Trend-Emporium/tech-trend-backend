@@ -10,7 +10,8 @@ namespace General.Dto.Category
     public class CreateCategoryRequest
     {
         [Required(ErrorMessage = "The name is required.")]
-        [StringLength(120, ErrorMessage = "The name must be a maximum length of 120 characters.")]
+        [StringLength(120, MinimumLength = 3, ErrorMessage = "The name must be between 3 and 120 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9\s\-\.\,&]+$", ErrorMessage = "The name can only contain letters, numbers, spaces, and the following characters: - . , &")]
         public string Name { get; set; } = null!;
     }
 }

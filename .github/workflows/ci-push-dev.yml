@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOTNET_VERSION: '8.0.0'
+  DOTNET_VERSION: '8.0.x'
   REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}            
   REGISTRY_NAME: ${{ secrets.ACR_NAME }}                
   REPO: tech-trend-emporium/api                            # <—— pick ONE and keep it consistent

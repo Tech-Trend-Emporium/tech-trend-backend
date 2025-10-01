@@ -1,119 +1,63 @@
-name: ci push dev
+name: ci-push-dev
 
 on:
   push:
-    branches: [ "development" ]
+    branches: [development]
   workflow_dispatch:
 
-env:
-  # --- Set these repo secrets in GitHub ---
-  # ACR_NAME:            e.g. tteacr
-  # ACR_LOGIN_SERVER:    e.g. tteacr.azurecr.io
-  ACR_NAME: ${{ secrets.ACR_NAME }}
-  REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
-  IMAGE_NAME: trendtech-emporium/api
-  DOTNET_VERSION: "8.0.x"
+concurrency:
+  group: ci-dev-${{ github.ref }}
+  cancel-in-progress: true
 
-permissions:
-  contents: read
-  packages: read
-  # Keep this so you can easily switch to OIDC later if you want.
-  id-token: write
+env:
+  DOTNET_VERSION: '8.0.0'
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}            
+  REGISTRY_NAME: ${{ secrets.ACR_NAME }}                
+  REPO: tech-trend-emporium/api                            # <—— pick ONE and keep it consistent
+  SHA_TAG: ${{ github.sha }}
+  DEV_TAG: dev-latest
 
 jobs:
-  build-test-push:
-    name: Build, Test, and Push Image
+  build-and-push:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ci-dev-${{ github.ref_name }}
-      cancel-in-progress: true
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Test
+      - name: Restore/Build/Test
         run: |
-          echo "Tests are being executed..."
-          dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
-          echo "Tests succesfully done"
-          
-#      - name: Publish test results
-#        if: always()
-#        uses: dorny/test-reporter@v1
-#        with:
-#          name: .NET Tests (development)
-#          path: "**/test_results.trx"
-#          reporter: dotnet-trx
+          dotnet restore
+          dotnet build --no-restore -c Release
+          dotnet test --no-build --verbosity normal
 
-      - name: Azure login (service principal)
+      # OIDC to Azure -> then az acr login (no password stored)
+      - name: Azure login (OIDC)
+        if: ${{ vars.AZURE_USE_OIDC == 'true' }}
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      # Ensure we are targeting the exact registry host (no https://, no trailing slash)
-      - name: Sanity check registry host
-        run: |
-          echo "ACR_NAME=${{ secrets.ACR_NAME }}"
-          echo "ACR_LOGIN_SERVER=${{ secrets.ACR_LOGIN_SERVER }}"
-          if [[ "${{ secrets.ACR_LOGIN_SERVER }}" == *"://"* ]]; then
-            echo "ERROR: ACR_LOGIN_SERVER must be like 'tteacr.azurecr.io' (no https://)"; exit 1;
-          fi
+      - name: Docker login to ACR via az
+        if: ${{ vars.AZURE_USE_OIDC == 'true' }}
+        run: az acr login --name $REGISTRY_NAME
 
-      # Perform docker login using ACR refresh token (AAD) for THIS registry host
-      - name: ACR docker login via AAD refresh token
-        env:
-          ACR_NAME: ${{ secrets.ACR_NAME }}                  # e.g. tteacr
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}  # e.g. tteacr.azurecr.io
-        run: |
-          REFRESH_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
-          echo "$REFRESH_TOKEN" | docker login "$ACR_LOGIN_SERVER" \
-            -u 00000000-0000-0000-0000-000000000000 --password-stdin
-          echo "docker login to $ACR_LOGIN_SERVER completed"
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # MUST match the registry host we just logged into
-          images: ${{ secrets.ACR_LOGIN_SERVER }}/trendtech-emporium/api
-          tags: |
-            type=sha,format=short
-            type=ref,event=branch
-            type=raw,value=${{ github.run_number }}
-
-      - name: Build and push
+      - name: Build & Push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ steps.meta.outputs.image_uri }}
+            ${{ steps.meta.outputs.image_uri_latest }}
 
-      - name: Alert on image push
+      - name: Summary
         run: |
-            echo "Pushed tags: ${{ steps.meta.outputs.tags }}"
-
+          echo "Pushed: ${{ steps.meta.outputs.image_uri }}" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed: ${{ steps.meta.outputs.image_uri_latest }}" >> $GITHUB_STEP_SUMMARY

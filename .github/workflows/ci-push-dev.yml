@@ -49,13 +49,12 @@ jobs:
           echo "IMAGE_DEV=${REGISTRY_SERVER}/${REPO}:${DEV_TAG}"
 
       # ---------- Login strategy: OIDC if vars exist ----------
-      - name: Azure login (OIDC) if configured
+      - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Docker login to ACR via az (OIDC path)
-        if: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' }}
         run: az acr login --name $REGISTRY_NAME
 
       # ---------- Sanity check what we are about to push ----------

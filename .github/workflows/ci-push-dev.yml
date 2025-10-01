@@ -70,14 +70,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Log in to ACR (via Azure CLI)
-        run: az acr login --name ${{ env.ACR_NAME }}
+      - name: ACR docker login (AAD)
+        run: |
+          ACCESS_TOKEN=$(az acr login --name ${{ secrets.ACR_NAME }} --expose-token --output tsv --query accessToken)
+          echo $ACCESS_TOKEN | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u 00000000-0000-0000-0000-000000000000 --password-stdin
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/trendtech-emporium/api
           tags: |
             type=sha,format=short
             type=ref,event=branch

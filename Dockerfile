@@ -23,8 +23,8 @@ COPY . .
 RUN dotnet restore TechTrendEmporium.sln
 
 # Build & publish API
-RUN dotnet build TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore
-RUN dotnet publish TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-build
+RUN dotnet build TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/build --no-restore /p:EnableSourceControlManagerQueries=false
+RUN dotnet publish TechTrendEmporium/API.csproj -c $BUILD_CONFIGURATION -o /app/publish --no-build /p:EnableSourceControlManagerQueries=false
 
 # ===== Runtime stage =====
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final

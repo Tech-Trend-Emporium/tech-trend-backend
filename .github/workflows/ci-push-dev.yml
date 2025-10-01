@@ -55,7 +55,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Docker login to ACR via az (OIDC path)
-        run: az acr login --name $REGISTRY_NAME
+        run: az acr login --name ${REGISTRY_NAME}
 
       # ---------- Sanity check what we are about to push ----------
       - name: Echo tags for debug

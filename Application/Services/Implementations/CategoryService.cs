@@ -1,5 +1,6 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
+using Application.Exceptions;
 using General.Dto.Category;
 using General.Mappers;
 using System;
@@ -30,7 +31,7 @@ namespace Application.Services.Implementations
         {
             var normalized = dto.Name.Trim().ToUpperInvariant();
             var exists = await _categoryRepository.ExistsAsync(c => c.Name.ToUpper() == normalized, ct);
-            if (exists) throw new InvalidOperationException($"Category with name '{dto.Name}' already exists.");
+            if (exists) throw new ConflictException($"Category with name '{dto.Name}' already exists.");
 
             var entity = CategoryMapper.ToEntity(dto);
 
@@ -87,11 +88,11 @@ namespace Application.Services.Implementations
         public async Task<CategoryResponse> UpdateAsync(int id, UpdateCategoryRequest dto, CancellationToken ct = default)
         {
             var entity = await _categoryRepository.GetByIdAsync(ct, id);
-            if (entity is null) throw new KeyNotFoundException($"The category with ID '{id}' was not found.");
+            if (entity is null) throw new NotFoundException($"The category with ID '{id}' was not found.");
 
             var normalized = dto.Name.Trim().ToUpperInvariant();
             var nameTaken = await _categoryRepository.ExistsAsync(c => c.Id != id && c.Name.ToUpper() == normalized, ct);
-            if (nameTaken) throw new InvalidOperationException($"Category with name '{dto.Name}' already exists.");
+            if (nameTaken) throw new ConflictException($"Category with name '{dto.Name}' already exists.");
 
             CategoryMapper.ApplyUpdate(entity, dto);
 

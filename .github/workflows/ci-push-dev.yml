@@ -11,9 +11,9 @@ concurrency:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}            
-  REGISTRY_NAME: ${{ secrets.ACR_NAME }}                
-  REPO: tech-trend-emporium/api                            # <—— pick ONE and keep it consistent
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. myregistry.azurecr.io
+  REGISTRY_NAME:  ${{ secrets.ACR_NAME }}            # e.g. myregistry (no .azurecr.io)
+  REPO: tech-trend-emporium/api                       # keep this EXACT everywhere
   SHA_TAG: ${{ github.sha }}
   DEV_TAG: dev-latest
 
@@ -34,18 +34,36 @@ jobs:
           dotnet build --no-restore -c Release
           dotnet test --no-build --verbosity normal
 
-      # OIDC to Azure -> then az acr login (no password stored)
-      - name: Azure login (OIDC)
-        if: ${{ vars.AZURE_USE_OIDC == 'true' }}
+      # ---------- Compute tags (this was missing) ----------
+      - name: Set image tags
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${REGISTRY_SERVER}" || -z "${REPO}" ]]; then
+            echo "REGISTRY_SERVER or REPO not set"; exit 1
+          fi
+          echo "image_uri=${REGISTRY_SERVER}/${REPO}:${SHA_TAG}"       >> "$GITHUB_OUTPUT"
+          echo "image_uri_latest=${REGISTRY_SERVER}/${REPO}:${DEV_TAG}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_SHA=${REGISTRY_SERVER}/${REPO}:${SHA_TAG}"
+          echo "IMAGE_DEV=${REGISTRY_SERVER}/${REPO}:${DEV_TAG}"
+
+      # ---------- Login strategy: OIDC if vars exist ----------
+      - name: Azure login (OIDC) if configured
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker login to ACR via az
-        if: ${{ vars.AZURE_USE_OIDC == 'true' }}
+      - name: Docker login to ACR via az (OIDC path)
+        if: ${{ vars.AZURE_CLIENT_ID != '' && vars.AZURE_TENANT_ID != '' && vars.AZURE_SUBSCRIPTION_ID != '' }}
         run: az acr login --name $REGISTRY_NAME
+
+      # ---------- Sanity check what we are about to push ----------
+      - name: Echo tags for debug
+        run: |
+          echo "Will push:"
+          echo "  ${{ steps.meta.outputs.image_uri }}"
+          echo "  ${{ steps.meta.outputs.image_uri_latest }}"
 
       - name: Build & Push
         uses: docker/build-push-action@v6

@@ -127,8 +127,6 @@ jobs:
           REG: ${{ env.REGISTRY_SERVER }}
           IMG: ${{ env.IMAGE_NAME }}
           DIG: ${{ steps.dig.outputs.DIGEST }}
-        run: |
-          echo "{\"image\":\"$REG/$IMG@${DIG}\"}" > image-ref.json
 
       - name: Summary
         if: always()

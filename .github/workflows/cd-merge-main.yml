@@ -6,6 +6,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+  push:
+      branches: [main]
+
 concurrency:
   group: cd-merge-main
   cancel-in-progress: false
@@ -47,7 +50,10 @@ jobs:
         uses: azure/cli@v2
         with:
           azcliversion: 2.62.0
+    # --- First test the existence of the Container App       
           inlineScript: |
+            echo az containerapp show --name $ACA_APP_NAME --resource-group $RESOURCE_GROUP
+            
             set -euo pipefail
 
             APP="$ACA_APP_NAME"

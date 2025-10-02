@@ -22,7 +22,7 @@ env:
   # --- Derived ---
   IMAGE_TAG: ${{ github.sha }}
   IMAGE_DIGEST_TAG: ${{ github.sha }}                           # keep the same; could be changed to digest if desired
-  IMAGE_URI: ${ REGISTRY_SERVER }/${ ACR_REPO }:${ env.IMAGE_TAG }
+  IMAGE_URI: $REGISTRY_SERVER/$ACR_REPO:$IMAGE_TAG
   REVISION_SUFFIX: ${{ github.sha }}
   GREEN_LABEL: green
   BLUE_LABEL: blue

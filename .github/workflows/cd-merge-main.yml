@@ -52,7 +52,7 @@ jobs:
           azcliversion: 2.62.0
     # --- First test the existence of the Container App       
           inlineScript: |
-            echo az containerapp show --name $ACA_APP_NAME --resource-group $RESOURCE_GROUP
+            az containerapp show --name $ACA_APP_NAME --resource-group $RESOURCE_GROUP
             
             set -euo pipefail
 

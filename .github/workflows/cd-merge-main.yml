@@ -4,8 +4,6 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
-  push:
-    branches: [main,dev]
   workflow_dispatch:
 
 concurrency:
@@ -33,7 +31,7 @@ env:
 
 jobs:
   deploy:
-    if: ${{ github.event.pull_request.merged == true }}
+  # ---  if: ${{ github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
 
     steps:

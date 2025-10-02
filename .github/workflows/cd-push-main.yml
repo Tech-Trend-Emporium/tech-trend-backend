@@ -9,10 +9,6 @@ concurrency:
   group: cd-push-main
   cancel-in-progress: false
 
-permissions:
-  id-token: write   # OIDC to Azure
-  contents: read
-
 env:
   # --- Required repo VARIABLES (Settings > Variables) ---
   REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}              # e.g. myregistry.azurecr.io
@@ -30,6 +26,10 @@ env:
   REVISION_SUFFIX: ${{ github.sha }}
   GREEN_LABEL: green
   BLUE_LABEL: blue
+
+permissions:
+  id-token: write   # OIDC to Azure
+  contents: read
 
 jobs:
   deploy:

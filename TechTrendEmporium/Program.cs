@@ -15,12 +15,25 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using Starter;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure PostgreSQL connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+
+var products = await SeedFromApi.FetchProductsAsync();
+SeedFromApi.AddCategoriesIfNotExistAsync(products, new AppDbContext(
+    new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(connectionString)
+        .Options)).Wait();
+SeedFromApi.AddProductsIfNotExistAsync(products, new AppDbContext(
+    new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(connectionString)
+        .Options)).Wait();
+
+
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");

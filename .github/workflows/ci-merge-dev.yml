@@ -18,12 +18,11 @@ env:
   DOTNET_VERSION: '8.0.x'
   REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. myregistry.azurecr.io
   REGISTRY_NAME:  ${{ secrets.ACR_NAME }}            # e.g. myregistry (optional)
-  IMAGE_NAME:     trendtech-emporium/api
+  IMAGE_NAME:     tech-trend-emporium/api
   TAG_PREFIX:     dev
 
 jobs:
   build-and-push:
-    # only when PR was merged OR manual dispatch
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true) }}
     runs-on: ubuntu-latest
 
@@ -56,12 +55,13 @@ jobs:
       - name: Build (Release)
         run: dotnet build --no-restore -c Release
 
-      # ---- OPTIONAL tests (runs only if projects exist) ----
+      # ---- OPTIONAL & SIMPLE TESTS ----
       - name: Discover test projects
         id: testscan
         shell: bash
         run: |
-          mapfile -t TESTS < <(git ls-files | grep -Ei '(^|/)(tests?|test)(/|$)' | grep -E '\.csproj$' || true)
+          mapfile -t TESTS < <(git ls-files | \
+            grep -Ei '(^|/)(tests?|test)(/|$)' | grep -E '\.csproj$' || true)
           if [ ${#TESTS[@]} -eq 0 ]; then
             mapfile -t TESTS < <(git ls-files | grep -E '\.(Tests|Test)\.csproj$' || true)
           fi
@@ -93,21 +93,12 @@ jobs:
 
       # ---- Azure auth ----
       - name: Azure login (OIDC)
-        if: ${{ secrets.AZURE_CLIENT_ID && secrets.AZURE_TENANT_ID && secrets.AZURE_SUBSCRIPTION_ID }}
         uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Azure login (Service Principal JSON)
-        if: ${{ ! (secrets.AZURE_CLIENT_ID && secrets.AZURE_TENANT_ID && secrets.AZURE_SUBSCRIPTION_ID) && secrets.AZURE_CREDENTIALS }}
-        uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: ACR docker login via az
-        run: az acr login --name "${{ steps.vars.outputs.REG_NAME }}"
+        run: az acr login --name "$REGISTRY_NAME"
 
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
@@ -117,6 +108,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -126,21 +118,17 @@ jobs:
         id: dig
         run: echo "DIGEST=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
 
-      # ⬇️ Split: create file, then upload artifact (no mixed uses/run)
-      - name: Create image-ref file
+      - name: Publish image reference (for CD)
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-ref-${{ steps.vars.outputs.SHORT_SHA }}
+          path: image-ref.json
         env:
           REG: ${{ env.REGISTRY_SERVER }}
           IMG: ${{ env.IMAGE_NAME }}
           DIG: ${{ steps.dig.outputs.DIGEST }}
         run: |
           echo "{\"image\":\"$REG/$IMG@${DIG}\"}" > image-ref.json
-          cat image-ref.json
-
-      - name: Upload image reference (for CD)
-        uses: actions/upload-artifact@v4
-        with:
-          name: image-ref-${{ steps.vars.outputs.SHORT_SHA }}
-          path: image-ref.json
 
       - name: Summary
         if: always()

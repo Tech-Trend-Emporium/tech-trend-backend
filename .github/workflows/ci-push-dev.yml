@@ -1,67 +1,80 @@
-name: ci-push-dev (Artifact)
+name: ci-push-dev
 
 on:
   push:
     branches: [development]
+  workflow_dispatch:
 
 concurrency:
   group: ci-dev-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  DOTNET_VERSION: '8.0.0' # Latest LTS version
-  IMAGE_NAME: trend-tech-emporium-api
-  IMAGE_TAG: ${{ github.sha }}
-  # Repository variables vars
-  REGISTRY_SERVER: ${{ vars.REGISTRY_SERVER }} # (Docker Hub => docker.io, ACR => <registry_name>.azurecr.io)
-  REGISTRY_NAMESPACE: ${{ vars.REGISTRY_NAMESPACE }} # e.g. your-dh-username or your-acr-repo-namespace
-  IMAGE_URI: ${{ vars.REGISTRY_SERVER }}/${{ vars.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} # Path to docker image
-  # i.e. docker.io/myusername/trend-tech-emporium-api:8743b52063cd84097a65d1633f5c74f5
+  DOTNET_VERSION: '8.0.x'
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. myregistry.azurecr.io
+  REGISTRY_NAME:  ${{ secrets.ACR_NAME }}            # e.g. myregistry (no .azurecr.io)
+  REPO: tech-trend-emporium/api                       # keep this EXACT everywhere
+  SHA_TAG: ${{ github.sha }}
+  DEV_TAG: dev-latest
 
 jobs:
-  build-test-push:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Build
-        run: dotnet build --configuration Release
+      - name: Restore/Build/Test
+        run: |
+          dotnet restore
+          dotnet build --no-restore -c Release
+          dotnet test --no-build --verbosity normal
 
-      - name: Test
-        run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
-        continue-on-error: true # Delete when project isn't skeleton!!!
+      # ---------- Compute tags (this was missing) ----------
+      - name: Set image tags
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${REGISTRY_SERVER}" || -z "${REPO}" ]]; then
+            echo "REGISTRY_SERVER or REPO not set"; exit 1
+          fi
+          echo "image_uri=${REGISTRY_SERVER}/${REPO}:${SHA_TAG}"       >> "$GITHUB_OUTPUT"
+          echo "image_uri_latest=${REGISTRY_SERVER}/${REPO}:${DEV_TAG}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_SHA=${REGISTRY_SERVER}/${REPO}:${SHA_TAG}"
+          echo "IMAGE_DEV=${REGISTRY_SERVER}/${REPO}:${DEV_TAG}"
 
-      - name: Docker login
-        uses: docker/login-action@v3
+      # ---------- Login strategy: OIDC if vars exist ----------
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
         with:
-          registry: ${{ env.REGISTRY_SERVER }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build image
+      - name: Docker login to ACR via az (OIDC path)
+        run: az acr login --name ${REGISTRY_NAME}
+
+      # ---------- Sanity check what we are about to push ----------
+      - name: Echo tags for debug
+        run: |
+          echo "Will push:"
+          echo "  ${{ steps.meta.outputs.image_uri }}"
+          echo "  ${{ steps.meta.outputs.image_uri_latest }}"
+
+      - name: Build & Push
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false
-          tags: ${{ env.IMAGE_URI }}
-
-      - name: Push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
+          file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_URI }}
-            ${{ env.REGISTRY_SERVER }}/${{ env.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}:dev-latest
+            ${{ steps.meta.outputs.image_uri }}
+            ${{ steps.meta.outputs.image_uri_latest }}
 
-      - name: Alert
+      - name: Summary
         run: |
-          echo "Image pushed: $IMAGE_URI" >> $GITHUB_STEP_SUMMARY
-          echo "Branch: $GITHUB_REF_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed: ${{ steps.meta.outputs.image_uri }}" >> $GITHUB_STEP_SUMMARY
+          echo "Pushed: ${{ steps.meta.outputs.image_uri_latest }}" >> $GITHUB_STEP_SUMMARY

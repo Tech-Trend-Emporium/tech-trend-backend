@@ -1,0 +1,88 @@
+name: cd-on-merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-merge-main
+  cancel-in-progress: false
+
+permissions:
+  id-token: write    # required for Azure OIDC
+  contents: read
+
+env:
+  # --- Your configured vars/secrets ---
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}        # e.g. tteacr.azurecr.io
+  REGISTRY_NAMESPACE: tech-trend-emporium                 # (not used directly; kept for clarity)
+  ACR_REPO: tech-trend-emporium/api                       # repo path inside ACR
+  RESOURCE_GROUP: ${{ vars.RG }}
+  ACA_ENV_NAME: ${{ vars.ACA_ENV_NAME }}
+  ACA_APP_NAME: ${{ vars.ACA_APP_NAME }}
+
+  # --- Derived (from the PR that was merged) ---
+  IMAGE_TAG: ${{ github.event.pull_request.head.sha }}    # EXACT artifact built by CI
+  BLUE_LABEL: blue
+  GREEN_LABEL: green
+  HEALTH_TIMEOUT_SECONDS: "120"                           # tweak as needed
+
+jobs:
+  deploy:
+  # ---  if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (optional)
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy green revision at 0% (create/label/split)
+        uses: azure/cli@v2
+        with:
+          azcliversion: 2.62.0
+          inlineScript: |
+            set -euo pipefail
+
+            APP="$ACA_APP_NAME"
+            RG="$RESOURCE_GROUP"
+            ENV_NAME="$ACA_ENV_NAME"
+            IMG="$REGISTRY_SERVER/$ACR_REPO:$IMAGE_TAG"
+            REV="$IMAGE_TAG"
+            BLUE="$BLUE_LABEL"
+            GREEN="$GREEN_LABEL"
+
+            echo "Deploying immutable image: $IMG"
+
+            # 1) Ensure multiple revisions mode (needed for traffic split)
+            az containerapp revision set-mode \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --mode multiple
+
+            # 2) Create NEW revision with the CI image
+            az containerapp update \
+              --name "$APP" \
+              --resource-group "$RG" \
+              --image "$IMG" \
+              --revision-suffix "$REV"
+
+            # 3) Identify the latest (just-created) active revision
+            LATEST_REV=$(
+              az containerapp revision list -g "$RG" -n "$APP" \
+                --query "sort_by([?properties.active==\`true\`], &properties.createdTimeUtc)[-1].name" -o tsv
+            )
+            echo "Latest (green) revision: $LATEST_REV"
+
+            # Label it as green (idempotent)
+            az containerapp revision label add -g "$RG" -n "$APP" --label "$GREEN" --revision "$LATEST_REV" || true
+
+            # Find current prod (any active revision with traffic > 0), label as blue
+            PROD_REV=$(
+              az containerapp revision list -g "$RG" -n

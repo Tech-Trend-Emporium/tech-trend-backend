@@ -2,7 +2,7 @@ name: cd-push-main
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
   
 concurrency:

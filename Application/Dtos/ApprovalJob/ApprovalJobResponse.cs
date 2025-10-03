@@ -8,5 +8,6 @@ namespace General.Dto.ApprovalJob
 {
     public class ApprovalJobResponse
     {
+
     }
 }

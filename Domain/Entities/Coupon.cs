@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Validations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -35,8 +36,7 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (ValidTo.HasValue && ValidTo < ValidFrom)
-                yield return new ValidationResult("The field ValidTo must be after ValidFrom field.", new[] { nameof(ValidTo), nameof(ValidFrom) });
+            if (ValidTo.HasValue && ValidTo < ValidFrom) yield return new ValidationResult(CouponValidator.ValidToAfterValidFromErrorMessage, new[] { nameof(ValidTo), nameof(ValidFrom) });
         }
     }
 }

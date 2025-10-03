@@ -7,19 +7,12 @@ using Domain;
 using Infrastructure.DbContexts;
 using Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Starter.Models;
 
 namespace Starter
 {
     public class SeedFromApi
     {
-        public class ProductFromApi
-        {
-            public string Title { get; set; }
-            public decimal Price { get; set; }
-            public string Description { get; set; }
-            public string Category { get; set; }
-            public string Image { get; set; }
-        }
         public static async Task<List<ProductFromApi>> FetchProductsAsync()
         {
             var httpClient = new HttpClient();
@@ -36,7 +29,6 @@ namespace Starter
             }
             
             return products;
-            
         }
 
         public static async Task AddCategoriesIfNotExistAsync(List<ProductFromApi> products, AppDbContext dbContext)

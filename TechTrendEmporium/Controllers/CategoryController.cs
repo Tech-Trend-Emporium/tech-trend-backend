@@ -18,6 +18,7 @@ namespace API.Controllers
             _categoryService = categoryService;
         }
 
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -28,6 +29,7 @@ namespace API.Controllers
             return result is null ? NotFound() : Ok(result);
         }
 
+        [Authorize(Roles = "ADMIN, EMPLOYEE, SHOPPER")]
         [HttpGet]
         [ProducesResponseType(typeof(IReadOnlyList<CategoryResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)
@@ -47,6 +49,7 @@ namespace API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest dto, CancellationToken ct)

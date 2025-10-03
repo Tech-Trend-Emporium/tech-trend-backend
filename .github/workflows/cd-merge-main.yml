@@ -1,124 +1,123 @@
-﻿name: CD (main merge → ACA deploy by digest)
+﻿name: cd-merge-main
 
 on:
-  pull_request:
-    branches: [main]
-    types: [closed]
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
     inputs:
-      image:
-        description: "Optional: full image ref to deploy (e.g., myregistry.azurecr.io/tech-trend-emporium/api@sha256:...)"
-        required: false
-
-concurrency:
-  group: cd-main-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-  id-token: write  # needed for azure/login OIDC
+      image_ref:
+        description: "ACR image ref: a tag (dev|dev-<sha>|2025.10.02-2347) or a digest (sha256:...)"
+        required: true
 
 env:
-  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}           # e.g. myregistry.azurecr.io
-  REGISTRY_NAMESPACE: tech-trend-emporium                    # (informational; ACR_REPO already includes it)
-  ACR_REPO: tech-trend-emporium/api                          # repo path inside ACR
-  TAG_TO_PROMOTE: dev                                        # default tag to fetch digest from
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}            # e.g. myacr.azurecr.io
+  ACR_NAME: ${{ secrets.ACR_NAME }}                            # e.g. myacr
+  REGISTRY_NAMESPACE: tech-trend-emporium                     # your org/namespace
+  ACR_REPO: tech-trend-emporium/api                           # your repo path
   RESOURCE_GROUP: ${{ vars.RG }}
   ACA_ENV_NAME: ${{ vars.ACA_ENV_NAME }}
   ACA_APP_NAME: ${{ vars.ACA_APP_NAME }}
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
-    # run on manual dispatch OR when PR to main was merged
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout (optional)
-        uses: actions/checkout@v4
-
-      - name: Set variables
-        id: vars
-        shell: bash
-        run: |
-          # Derive ACR registry short name from FQDN (leftmost label)
-          REG_NAME="$(echo "${{ env.REGISTRY_SERVER }}" | cut -d. -f1)"
-          echo "REG_NAME=$REG_NAME" >> "$GITHUB_OUTPUT"
-
-          SHORT_SHA="${GITHUB_SHA::7}"
-          DATE_TAG="$(date -u +'%Y.%m.%d-%H%M')"
-          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_OUTPUT"
-          echo "DATE_TAG=$DATE_TAG" >> "$GITHUB_OUTPUT"
-
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
-            creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Resolve the immutable image reference to deploy:
-      # 1) If workflow_dispatch passed an explicit image (repo@sha256:...), use it.
-      # 2) Else read the digest currently pointed to by the tag in ACR (default: 'dev').
-      - name: Resolve image reference (digest)
-        id: img
+      - name: Install Azure CLI extensions
+        run: |
+          az extension add --name containerapp --upgrade
+          az extension add --name acr --upgrade || true
+
+      - name: ACR login + derive repo path
+        id: acr
         shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.image }}" ]; then
-            IMAGE="${{ github.event.inputs.image }}"
-            echo "Resolved (manual): $IMAGE"
-            echo "IMAGE=$IMAGE" >> "$GITHUB_OUTPUT"
-            exit 0
+          ACR_NAME="$ACR_NAME"          # myacr.azurecr.io -> myacr
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          az acr login --name "$ACR_NAME"
+          echo "repo_path=${REGISTRY_NAMESPACE}/${ACR_REPO}" >> $GITHUB_OUTPUT
+
+      - name: Resolve tag → digest (or accept digest as-is)
+        id: digest
+        shell: bash
+        env:
+          ACR_NAME: ${{ steps.acr.outputs.acr_name }}
+          REPO_PATH: ${{ steps.acr.outputs.repo_path }}
+        run: |
+          REF="${{ github.event.inputs.image_ref }}"
+          if [[ "$REF" == sha256:* ]]; then
+            DIGEST="$REF"
+          else
+            DIGEST="$(az acr repository show \
+              --name "$ACR_NAME" \
+              --image "${REPO_PATH}:${REF}" \
+              --query digest -o tsv)"
           fi
 
-          echo "Resolving digest from ACR tag: '${{ env.TAG_TO_PROMOTE }}' ..."
-          # Fetch manifests and pick the entry that has the desired tag
-          DIGEST="$(az acr repository show-manifests \
-            --name '${{ steps.vars.outputs.REG_NAME }}' \
-            --repository '${{ env.ACR_REPO }}' \
-            --query "[?tags && contains(join(',', tags), '${{ env.TAG_TO_PROMOTE }}')][0].digest" -o tsv)"
-
-          if [ -z "$DIGEST" ]; then
-            echo "Failed to resolve digest for tag '${{ env.TAG_TO_PROMOTE }}' in ${{ steps.vars.outputs.REG_NAME }}/${{ env.ACR_REPO }}" >&2
+          if [[ -z "$DIGEST" ]]; then
+            echo "Failed to resolve digest for '${REF}' in '${REPO_PATH}'" >&2
             exit 1
           fi
 
-          IMAGE="${{ env.REGISTRY_SERVER }}/${{ env.ACR_REPO }}@${DIGEST}"
+          IMAGE="${{ env.REGISTRY_SERVER }}/${REPO_PATH}@${DIGEST}"
+          echo "image=$IMAGE"   >> $GITHUB_OUTPUT
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Resolved: $IMAGE"
-          echo "IMAGE=$IMAGE" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure manual revision mode (simple blue/green later)
+      - name: Ensure multi-revision (blue/green) mode
         run: |
           az containerapp revision set-mode \
-            --name "${{ env.ACA_APP_NAME }}" \
-            --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --mode manual
+            -g "${{ env.RESOURCE_GROUP }}" \
+            -n "${{ env.ACA_APP_NAME }}" \
+            --mode multiple
 
-      - name: Deploy new revision (no health check; 100% traffic)
-        id: deploy
+      - name: Update image → create new revision (0% initially)
+        id: newrev
+        shell: bash
+        env:
+          IMAGE: ${{ steps.digest.outputs.image }}
+        run: |
+          set -e
+          az containerapp update \
+            -g "${{ env.RESOURCE_GROUP }}" \
+            -n "${{ env.ACA_APP_NAME }}" \
+            --image "$IMAGE"
+
+          # Grab most recent active revision (the one we just made)
+          NEW_REV="$(az containerapp revision list \
+            -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+            --query "sort_by([?properties.active==\`true\`], &properties.createdTime)[-1].name" -o tsv)"
+          echo "name=$NEW_REV" >> $GITHUB_OUTPUT
+
+          # Keep current traffic, add the new revision at 0%
+          TRAFFIC="$(az containerapp ingress traffic show -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}")"
+          echo "$TRAFFIC" | jq -r '.[] | "\(.revisionName)=\(.weight)"' > current.txt
+          if ! grep -q "^${NEW_REV}=" current.txt; then
+            echo "${NEW_REV}=0" >> current.txt
+          fi
+          az containerapp ingress traffic set \
+            -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+            --revision-weight $(paste -sd' ' current.txt)
+
+      - name: Short wait (no health endpoint yet)
+        run: sleep 20
+
+      - name: Shift 100% traffic to new revision
         shell: bash
         run: |
-          REV_SUFFIX="main-$(date +%Y%m%d%H%M)-${GITHUB_SHA::7}"
-          NEW_REV="$(az containerapp update \
-            --name "${{ env.ACA_APP_NAME }}" \
-            --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --image "${{ steps.img.outputs.IMAGE }}" \
-            --revision-suffix "$REV_SUFFIX" \
-            --query "latestRevisionName" -o tsv)"
-          echo "REV=$NEW_REV" >> "$GITHUB_OUTPUT"
-
-          # Route all traffic to the new revision (keep it simple for now)
           az containerapp ingress traffic set \
-            --name "${{ env.ACA_APP_NAME }}" \
-            --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --revision-weight "$NEW_REV=100"
+            -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+            --revision-weight "${{ steps.newrev.outputs.name }}=100"
 
-      - name: Summarize
+      - name: Output
         run: |
-          {
-            echo "### 📦 Deployed to Azure Container Apps";
-            echo "- App: \`${{ env.ACA_APP_NAME }}\` (env: \`${{ env.ACA_ENV_NAME }}\`, RG: \`${{ env.RESOURCE_GROUP }}\`)";
-            echo "- Image: \`${{ steps.img.outputs.IMAGE }}\`";
-            echo "- New revision: \`${{ steps.deploy.outputs.REV }}\`";
-            echo "- Traffic: 100% → \`${{ steps.deploy.outputs.REV }}\`";
-            echo "";
-            echo "_Next: add a health endpoint and we can enable gradual traffic shifting (e.g., 10% → 100%)_";
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed image:  ${{ steps.digest.outputs.image }}"
+          echo "Live revision:   ${{ steps.newrev.outputs.name }}"

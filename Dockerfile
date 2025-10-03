@@ -9,6 +9,7 @@ COPY TechTrendEmporium/*.csproj TechTrendEmporium/
 COPY Application/*.csproj Application/
 COPY Domain/*.csproj Domain/
 COPY Infrastructure/*.csproj Infrastructure/
+COPY Starter/*.csproj Starter/
 
 # If you actually have NuGet.config at root, you can add:
 # COPY NuGet.config ./

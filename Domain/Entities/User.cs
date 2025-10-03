@@ -49,7 +49,6 @@ namespace Data.Entities
 
         public ICollection<Session> Sessions { get; set; } = new List<Session>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<ApprovalJob> RequestedJobs { get; set; } = new List<ApprovalJob>();
         public ICollection<ApprovalJob> DecidedJobs { get; set; } = new List<ApprovalJob>();

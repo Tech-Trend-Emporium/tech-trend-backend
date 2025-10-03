@@ -1,0 +1,164 @@
+﻿name: cd-merge-main
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      image_ref:
+        description: "ACR image ref: a tag (dev|dev-<sha>|2025.10.02-2347) or a digest (sha256:...)"
+        required: true
+
+env:
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}            # e.g. myacr.azurecr.io
+  ACR_NAME: ${{ secrets.ACR_NAME }}                            # e.g. myacr
+  ACR_REPO: tech-trend-emporium/api                           # your repo path
+  RESOURCE_GROUP: ${{ vars.RG }}
+  ACA_ENV_NAME: ${{ vars.ACA_ENV_NAME }}
+  ACA_APP_NAME: ${{ vars.ACA_APP_NAME }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure CLI extensions
+        run: |
+          az extension add --name containerapp --upgrade
+          az extension add --name acr --upgrade || true
+
+      - name: ACR login + derive repo path
+        id: acr
+        shell: bash
+        run: |
+          ACR_NAME="$ACR_NAME"          # myacr.azurecr.io -> myacr
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          az acr login --name "$ACR_NAME"
+          echo "repo_path=${ACR_REPO}" >> $GITHUB_OUTPUT
+
+      - name: Resolve tag → digest (or accept digest as-is)
+        id: digest
+        shell: bash
+        env:
+          ACR_NAME: ${{ steps.acr.outputs.acr_name }}
+          REPO_PATH: ${{ steps.acr.outputs.repo_path }}
+        run: |
+          REF="${{ github.event.inputs.image_ref }}"
+          if [[ "$REF" == sha256:* ]]; then
+            DIGEST="$REF"
+          else
+            DIGEST="$(az acr repository show \
+              --name "$ACR_NAME" \
+              --image "${REPO_PATH}:${REF}" \
+              --query digest -o tsv)"
+          fi
+
+          if [[ -z "$DIGEST" ]]; then
+            echo "Failed to resolve digest for '${REF}' in '${REPO_PATH}'" >&2
+            exit 1
+          fi
+
+          IMAGE="${{ env.REGISTRY_SERVER }}/${REPO_PATH}@${DIGEST}"
+          echo "image=$IMAGE"   >> $GITHUB_OUTPUT
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+          echo "Resolved: $IMAGE"
+
+      - name: Ensure multi-revision (blue/green) mode
+        run: |
+          az containerapp revision set-mode \
+            -g "${{ env.RESOURCE_GROUP }}" \
+            -n "${{ env.ACA_APP_NAME }}" \
+            --mode multiple
+
+      - name: Update image → create new revision
+        id: newrev
+        shell: bash
+        env:
+            IMAGE: ${{ steps.digest.outputs.image }}
+        run: |
+            set -e
+
+            # Kick a new revision by updating the image (pinned by digest)
+            az containerapp update \
+                -g "${{ env.RESOURCE_GROUP }}" \
+                -n "${{ env.ACA_APP_NAME }}" \
+                --image "$IMAGE" 1>/dev/null
+
+            # 1) Read the *declared* latest revision name (immediately available)
+            NEW_REV="$(az containerapp show \
+                -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+                --query "properties.latestRevisionName" -o tsv)"
+
+            if [[ -z "$NEW_REV" || "$NEW_REV" == "null" ]]; then
+                echo "ERROR: Could not determine the new revision name." >&2
+                az containerapp revision list -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" -o table || true
+                exit 1
+            fi
+            echo "name=$NEW_REV" >> $GITHUB_OUTPUT
+            echo "New revision (declared): $NEW_REV"
+
+            # 2) Wait until that revision is the *ready* one
+            #    (latestReadyRevisionName == NEW_REV). Poll for ~2 minutes.
+            for i in {1..24}; do
+                READY="$(az containerapp show \
+                -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+                --query "properties.latestReadyRevisionName" -o tsv || true)"
+                [[ "$READY" == "$NEW_REV" ]] && { echo "Revision is ready: $READY"; break; }
+                sleep 5
+            done
+
+            READY_NOW="$(az containerapp show \
+                -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+                --query "properties.latestReadyRevisionName" -o tsv)"
+            if [[ "$READY_NOW" != "$NEW_REV" ]]; then
+                echo "ERROR: New revision '$NEW_REV' did not become ready in time (ready=$READY_NOW)" >&2
+                az containerapp revision show -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" --revision "$NEW_REV" -o yaml || true
+                exit 1
+            fi
+
+            # 3) Put the new revision at 0% (blue/green prep). If there was no prior traffic, give it 100%.
+            set -euo pipefail
+            if TRAFFIC_JSON="$(az containerapp ingress traffic show -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" 2>/dev/null)"; then
+                COUNT=$(echo "${TRAFFIC_JSON:-[]}" | jq 'length')
+            else
+                COUNT=0
+            fi
+
+            if [[ "${COUNT:-0}" -eq 0 ]]; then
+                echo "No existing traffic rules found → sending 100% to ${NEW_REV}"
+                az containerapp ingress traffic set \
+                -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+                --revision-weight "${NEW_REV}=100"
+            else
+                echo "${TRAFFIC_JSON}" | jq -r '.[] | "\(.revisionName)=\(.weight)"' > current.txt
+                if ! grep -q "^${NEW_REV}=" current.txt; then
+                echo "${NEW_REV}=0" >> current.txt
+                fi
+                az containerapp ingress traffic set \
+                -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+                --revision-weight $(paste -sd' ' current.txt)
+            fi
+
+
+      - name: Short wait (no health endpoint yet)
+        run: sleep 20
+
+      - name: Shift 100% traffic to new revision
+        shell: bash
+        run: |
+          az containerapp ingress traffic set \
+            -g "${{ env.RESOURCE_GROUP }}" -n "${{ env.ACA_APP_NAME }}" \
+            --revision-weight "${{ steps.newrev.outputs.name }}=100"
+
+      - name: Output
+        run: |
+          echo "Deployed image:  ${{ steps.digest.outputs.image }}"
+          echo "Live revision:   ${{ steps.newrev.outputs.name }}"

@@ -1,0 +1,78 @@
+﻿name: ci-pr-dev
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-dev-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  TAG_PREFIX: dev
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "PRO_TAG=${{ env.TAG_PREFIX }}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --no-restore -c Release
+
+      - name: Discover test projects
+        id: testscan
+        shell: bash
+        run: |
+          mapfile -t TESTS < <(git ls-files | \
+            grep -Ei '(^|/)(tests?|test)(/|$)' | grep -E '\.csproj$' || true)
+          if [ ${#TESTS[@]} -eq 0 ]; then
+            mapfile -t TESTS < <(git ls-files | grep -E '\.(Tests|Test)\.csproj$' || true)
+          fi
+          echo "FOUND=${#TESTS[@]}" >> "$GITHUB_OUTPUT"
+          printf "%s\n" "${TESTS[@]}" > tests.txt
+
+      - name: Run tests (if any)
+        if: ${{ steps.testscan.outputs.FOUND != '0' }}
+        shell: bash
+        run: |
+          while IFS= read -r proj; do
+            echo "Testing: $proj"
+            dotnet test "$proj" --no-build -c Release
+          done < tests.txt
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### PR validation for \`${{ steps.vars.outputs.BRANCH_NAME }}\`";
+            echo "- Commit: \`${{ steps.vars.outputs.SHORT_SHA }}\`";
+            echo "- Proposed tag on merge: \`${{ steps.vars.outputs.PRO_TAG }}\`";
+            if [ "${{ steps.testscan.outputs.FOUND }}" = "0" ]; then
+              echo "- Tests: _none found — step skipped_";
+            else
+              echo "- Tests: ran ${{ steps.testscan.outputs.FOUND }} project(s)";
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

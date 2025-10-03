@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Validations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -27,8 +28,7 @@ namespace Data.Entities
 
         public void AddItem(int productId)
         {
-            if (Items.Any(i => i.ProductId == productId))
-                throw new InvalidOperationException("The product is already in the wish list.");
+            if (Items.Any(i => i.ProductId == productId)) throw new InvalidOperationException(WishListValidator.ProductAlreadyInWishListErrorMessage);
 
             Items.Add(new WishListItem { ProductId = productId, WishList = this });
         }
@@ -36,12 +36,15 @@ namespace Data.Entities
         public void RemoveItem(int productId)
         {
             var item = Items.FirstOrDefault(i => i.ProductId == productId);
-            if (item is null) return; 
+            if (item is null) return;
 
             Items.Remove(item);
         }
 
-        public void Clear() => Items.Clear();
+        public void Clear()
+        {
+            Items.Clear();
+        }
     }
 
     [Index(nameof(WishListId), nameof(ProductId), IsUnique = true)]

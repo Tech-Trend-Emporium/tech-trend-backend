@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Validations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -53,7 +54,7 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (Count is < 0) yield return new ValidationResult("The field Count cannot be negative.", new[] { nameof(Count) });
+            if (Count is < 0) yield return new ValidationResult(ProductValidator.CountNegativeErrorMessage, new[] { nameof(Count) });
         }
     }
 }

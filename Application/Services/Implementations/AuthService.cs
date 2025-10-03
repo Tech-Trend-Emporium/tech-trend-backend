@@ -4,6 +4,7 @@ using Application.Dtos.Auth;
 using Application.Exceptions;
 using Data.Entities;
 using Domain.Entities;
+using Domain.Validations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -37,13 +38,13 @@ namespace Application.Services.Implementations
 
         public async Task<SignInResponse> RefreshToken(RefreshTokenRequest dto, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(dto.RefreshToken)) throw new BadRequestException("Refresh token is required.");
+            if (string.IsNullOrWhiteSpace(dto.RefreshToken)) throw new BadRequestException(AuthValidator.RefreshTokenRequiredErrorMessage);
 
             var existing = await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, ct);
-            if (existing == null || !existing.IsActive) throw new UnauthorizedException("Invalid or expired refresh token.");
+            if (existing == null || !existing.IsActive) throw new UnauthorizedException(AuthValidator.InvalidOrExpiredRefreshTokenErrorMessage);
 
             var user = await _userRepository.GetByIdAsync(ct, existing.UserId);
-            if (user == null || !user.IsActive) throw new UnauthorizedException("User is not allowed.");
+            if (user == null || !user.IsActive) throw new UnauthorizedException(AuthValidator.InactiveUserErrorMessage);
 
             existing.RevokedAtUtc = DateTime.UtcNow;
             var newRt = _tokenService.CreateRefreshToken(existing.UserId, existing.SessionId);
@@ -63,18 +64,17 @@ namespace Application.Services.Implementations
                 Role = user.Role.ToString(),
                 SessionId = existing.SessionId
             };
-
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest dto, CancellationToken ct = default)
         {
             var user = await _userRepository.GetAsync(u => u.Email == dto.EmailOrUsername || u.Username == dto.EmailOrUsername, asTracking: true, ct: ct);
-            if (user == null) throw new UnauthorizedException("Invalid credentials.");
+            if (user == null) throw new UnauthorizedException(AuthValidator.InvalidCredentialsErrorMessage);
 
             var pwd = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-            if (pwd == PasswordVerificationResult.Failed) throw new UnauthorizedException("Invalid credentials.");
+            if (pwd == PasswordVerificationResult.Failed) throw new UnauthorizedException(AuthValidator.InvalidCredentialsErrorMessage);
 
-            if (!user.IsActive) throw new UnauthorizedException("Inactive user.");
+            if (!user.IsActive) throw new UnauthorizedException(AuthValidator.InactiveUserErrorMessage);
 
             var session = new Session { UserId = user.Id };
             _sessionRepository.Add(session);
@@ -115,11 +115,10 @@ namespace Application.Services.Implementations
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(dto.RefreshToken))
-                throw new BadRequestException("Refresh token required when AllSessions=false.");
+            if (string.IsNullOrWhiteSpace(dto.RefreshToken)) throw new BadRequestException(AuthValidator.RefreshTokenRequiredWhenAllSessionsFalseErrorMessage);
 
             var rt = await _refreshTokenRepository.GetByTokenAsync(dto.RefreshToken, ct);
-            if (rt == null || rt.UserId != currentUserId) throw new NotFoundException("Refresh token not found.");
+            if (rt == null || rt.UserId != currentUserId) throw new NotFoundException(AuthValidator.RefreshTokenNotFoundErrorMessage);
 
             rt.RevokedAtUtc = DateTime.UtcNow;
 
@@ -131,13 +130,11 @@ namespace Application.Services.Implementations
             }
 
             await _unitOfWork.SaveChangesAsync(ct);
-
         }
 
         public async Task<SignUpResponse> SignUp(SignUpRequest dto, CancellationToken ct = default)
         {
-            if (await _userRepository.ExistsAsync(u => u.Email == dto.Email || u.Username == dto.Username, ct))
-                throw new ConflictException("The email or username is already taken.");
+            if (await _userRepository.ExistsAsync(u => u.Email == dto.Email || u.Username == dto.Username, ct)) throw new ConflictException(AuthValidator.EmailOrUsernameAlreadyTakenErrorMessage);
 
             var user = new User
             {
@@ -153,8 +150,7 @@ namespace Application.Services.Implementations
             return new SignUpResponse {
                 Id = user.Id, 
                 Email = user.Email, 
-                Username = user.Username, 
-                Role = user.Role.ToString()
+                Username = user.Username
             };
         }
     }

@@ -1,8 +1,6 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
-using Application.;
 using General.Dto.Product;
-using Infrastructure.DbContexts;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,7 +17,7 @@ namespace Application.Services.Implementations
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork  _unitOfWork;
 
         public ProductService(
             IProductRepository productRepository,

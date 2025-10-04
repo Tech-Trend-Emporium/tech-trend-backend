@@ -11,7 +11,7 @@ namespace Application.Services
     public interface IProductService
     {
 
-        Task<ProductResponse> CreateAsync(CreateProductRequest dto, CancellationToken ct = default);
+        Task<CreateProductResponse> CreateAsync(CreateProductRequest dto, CancellationToken ct = default);
         Task<ProductResponse?> GetByIdAsync(int id, CancellationToken ct = default);
         Task<IReadOnlyList<ProductResponse>> ListAsync(int skip = 0, int take = 50, CancellationToken ct = default);
         Task<(IReadOnlyList<ProductResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default);

@@ -9,23 +9,24 @@ namespace General.Dto.Product
     public class UpdateProductRequest
     {
         public int Id { get; set; }
-        public string title { get; set; } = null!;
-        public decimal price { get; set; }
-        public string description { get; set; } = null!;
-        public string category { get; set; } = null!;
-        public string image { get; set; } = null!;
-        public Rating rating { get; set; } = new Rating();
-        public Inventory inventory { get; set; } = new Inventory();
-        public class Rating
+        public string Title { get; set; } = null!;
+        public decimal Price { get; set; }
+        public string Description { get; set; } = null!;
+        public string Category { get; set; } = null!;
+        public string Image { get; set; } = null!;
+        public UpdateRating RatingInfo { get; set; } = new UpdateRating();
+        public UpdateInventory InventoryInfo { get; set; } = new UpdateInventory();
+
+        public class UpdateRating
         {
-            public double rate { get; set; }
-            public double count { get; set; }
+            public double Rate { get; set; }
+            public double Count { get; set; }
         }
-        public class Inventory
+
+        public class UpdateInventory
         {
-            public int total { get; set; }
-            public int available { get; set; }
+            public int Total { get; set; }
+            public int Available { get; set; }
         }
     }
-
 }

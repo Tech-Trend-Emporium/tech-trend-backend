@@ -18,5 +18,10 @@ namespace Application.Repository
         {
             _db = db;
         }
+
+        public Task<IReadOnlyList<Category>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null)
+        {
+            return Task.FromResult((IReadOnlyList<Category>)_db.Categories.Where(c => ids.Contains(c.Id)).ToList());
+        }
     }
 }

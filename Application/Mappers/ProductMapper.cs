@@ -1,5 +1,4 @@
-﻿using Application.Dtos.Product;
-using Data.Entities;
+﻿using Data.Entities;
 using General.Dto.Product;
 using System;
 using System.Collections.Generic;
@@ -12,101 +11,66 @@ namespace General.Mappers
 {
     public static class ProductMapper
     {
-        public static Product createToEntity(CreateProductRequest dto, CancellationToken ct)
+        public static Product ToEntity(CreateProductRequest dto, int categoryId)
         {
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
             var product = new Product
             {
-                Title = dto.title,
-                Price = dto.price,
-                Description = dto.description,
-                ImageUrl = dto.image,
-                RatingRate = dto.rating.rate,
-                Count = (int)dto.rating.count,
-                CategoryId = int.Parse(dto.category.Split('/').Last())
+                Title = dto.Title,
+                Price = dto.Price,
+                Description = dto.Description,
+                ImageUrl = dto.Image,
+                RatingRate = dto.RatingRate,
+                Count = dto.Count,
+                CategoryId = categoryId
             };
-            product.Inventory.Total = dto.inventory.total;
-            product.Inventory.Available = dto.inventory.available;
 
             return product;
         }
-        public static Product updateToEntity(UpdateProductRequest dto, CancellationToken ct)
+
+        public static Product ApplyUpdate(UpdateProductRequest dto, int categoryId)
         {
             var product = new Product
             {
                 Id = dto.Id,
-                Title = dto.title,
-                Price = dto.price,
-                Description = dto.description,
-                ImageUrl = dto.image,
-                RatingRate = dto.rating.rate,
-                Count = (int)dto.rating.count,
-                CategoryId = int.Parse(dto.category.Split('/').Last())
+                Title = dto.Title,
+                Price = dto.Price,
+                Description = dto.Description,
+                ImageUrl = dto.Image,
+                RatingRate = dto.RatingInfo.Rate,
+                Count = (int)dto.RatingInfo.Rate,
+                CategoryId = categoryId
             };
-            product.Inventory.Total = dto.inventory.total;
-            product.Inventory.Available = dto.inventory.available;
 
             return product;
         }
-        public static List<ProductResponse> ToResponseList(IReadOnlyList<Product> products)
-        {
-            var responseList = products.Select(p => new ProductResponse
-            {
-                Id = p.Id,
-                title = p.Title,
-                price = p.Price,
-                category = p.Category.Name + "/" + p.CategoryId,
-                
-            }).ToList();
-            return responseList;
-        }
 
-        public static ProductResponse ToResponse(Product product)
+        public static ProductResponse ToResponse(Product entity, string categoryName)
         {
-            var response = new ProductResponse
-            {
-                Id = product.Id,
-                title = product.Title,
-                price = product.Price,
-                category = product.Category.Name + "/" + product.CategoryId.ToString(),
+            if (entity is null) throw new ArgumentNullException(nameof(entity));
 
+            return new ProductResponse
+            {
+                Id = entity.Id,
+                Title = entity.Title,
+                Price = entity.Price,
+                Description = entity.Description,
+                ImageUrl = entity.ImageUrl,
+                RatingRate = entity.RatingRate,
+                Count = entity.Count,
+                Category = categoryName,
+                CreatedAt = entity.CreatedAt,
+                UpdatedAt = entity.UpdatedAt
             };
-            return response;
         }
 
-        public static UpdateProductResponse UpdateResponse(bool state)
+        public static List<ProductResponse> ToResponseList(IReadOnlyList<Product> entities, List<string> categoryNames)
         {
-            if (state) 
-            {
-                return  new UpdateProductResponse { Message = "Updated Successfully" };
-            }
-            else
-            {
-                return new UpdateProductResponse { Message = "Updated failed" };
-            }
-        }
+            if (entities == null) throw new ArgumentNullException(nameof(entities));
+            if (categoryNames == null) throw new ArgumentNullException(nameof(categoryNames));
 
-        public static CreateProductResponse CreateResponse(bool state, int id)
-        {
-            if (state)
-            {
-                return new CreateProductResponse { productId = id, Message = "Successful" };
-            }
-            else
-            {
-                return new CreateProductResponse { productId = id, Message = "Failure" };
-            }
-        }
-
-        public static DeleteProductResponse DeleteResponse(bool state)
-        {
-            if (state)
-            {
-                return new DeleteProductResponse { Message = "Deleted Successfully" };
-            }
-            else
-            {
-                return new DeleteProductResponse { Message = "Delete failed, product not found" };
-            }
+            return entities.Select((entity, index) => ToResponse(entity, categoryNames[index])).ToList();
         }
     }
 }

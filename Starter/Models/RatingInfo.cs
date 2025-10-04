@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Dtos.Product
+namespace Starter.Models
 {
-    public class UpdateProductResponse
+    public class RatingInfo
     {
-        public string Message { get; set; }
+        public double Rate { get; set; }
+        public int Count { get; set; }
     }
 }

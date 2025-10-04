@@ -69,7 +69,7 @@ namespace API.Controllers
         }
 
         [Authorize(Roles = "ADMIN")]
-        [HttpPut("{id:int}")]
+        [HttpPatch("{id:int}")]
         [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest dto, CancellationToken ct)
         {

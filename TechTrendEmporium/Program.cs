@@ -37,10 +37,10 @@ SeedFromApi.AddProductsIfNotExistAsync(products, new AppDbContext(
         .Options)).Wait();
 
 // Azure Key Vault
-var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";
-builder.Configuration.AddAzureKeyVault(
-    new Uri(keyVaultUrl),
-    new DefaultAzureCredential());
+//var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";
+//builder.Configuration.AddAzureKeyVault(
+//    new Uri(keyVaultUrl),
+//    new DefaultAzureCredential());
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");

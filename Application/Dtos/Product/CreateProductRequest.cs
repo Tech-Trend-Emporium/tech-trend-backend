@@ -1,4 +1,5 @@
-﻿using System;
+﻿using General.Dto.Inventory;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,23 +9,13 @@ namespace General.Dto.Product
 {
     public class CreateProductRequest
     {
-        public string title { get; set; } = null!;
-        public decimal price { get; set; }
-        public string description { get; set; } = null!;
-        public string category { get; set; } = null!;
-        public string image { get; set; } = null!;
-        public Rating rating { get; set; } = new Rating();
-        public Inventory inventory { get; set; } = new Inventory();
-
-        public class Rating
-        {
-            public float rate { get; set; } = 0;
-            public double count { get; set; } = 0;
-        }
-        public class Inventory
-        {
-            public int total { get; set; }
-            public int available { get; set; }
-        }
+        public string Title { get; set; } = null!;
+        public decimal Price { get; set; }
+        public string Description { get; set; } = null!;
+        public string Category { get; set; } = null!;
+        public string Image { get; set; } = null!;
+        public double RatingRate { get; set; }
+        public int Count { get; set; }
+        public CreateInventoryRequest Inventory { get; set; } = null!;
     }
 }

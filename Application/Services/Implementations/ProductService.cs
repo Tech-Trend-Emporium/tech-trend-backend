@@ -1,15 +1,18 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
+using Application.Exceptions;
+using Data.Entities;
+using Domain.Validations;
 using General.Dto.Product;
+using General.Mappers;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using General.Mappers;
-using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace Application.Services.Implementations
 {
@@ -49,12 +52,91 @@ namespace Application.Services.Implementations
         
         public async Task<ProductResponse> CreateAsync(CreateProductRequest dto, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+            var categoryName = dto.Category.Trim().ToUpper();
+            var category = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == categoryName, asTracking: true, ct: ct);
+            if (category is null) throw new NotFoundException(CategoryValidator.CategoryNotFound(categoryName));
+
+            var entity = ProductMapper.ToEntity(dto, category.Id);
+
+            if (dto.Inventory is not null)
+            {
+                if (dto.Inventory.Available > dto.Inventory.Total) throw new BadRequestException(InventoryValidator.AvailableGreaterThanTotalErrorMessage);
+
+                entity.Inventory = InventoryMapper.ToEntity(dto.Inventory);
+            }
+
+            _productRepository.Add(entity);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return ProductMapper.ToResponse(entity, category.Name);
         }
 
         public async Task<ProductResponse> UpdateAsync(int id, UpdateProductRequest dto, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+            var entity = await _productRepository.GetByIdAsync(ct, id);
+            if (entity is null) throw new NotFoundException(ProductValidator.ProductNotFound(id));
+
+            int? categoryId = null;
+            string? categoryNameForResponse = null;
+            if (!string.IsNullOrWhiteSpace(dto.Category))
+            {
+                var normalizedCategory = dto.Category.Trim().ToUpperInvariant();
+                var category = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == normalizedCategory, asTracking: true, ct: ct);
+
+                if (category is null) throw new NotFoundException(CategoryValidator.CategoryNotFound(dto.Category));
+                categoryId = category.Id;
+                categoryNameForResponse = category.Name;
+            }
+
+            ProductMapper.ApplyUpdate(entity, dto, categoryId);
+
+            if (dto.Inventory is not null)
+            {
+                var invDto = dto.Inventory;
+
+                if (entity.Inventory is null)
+                {
+                    var newTotal = invDto.Total ?? 0;
+                    var newAvailable = invDto.Available ?? 0;
+
+                    if (newAvailable > newTotal) throw new BadRequestException(InventoryValidator.AvailableGreaterThanTotalErrorMessage);
+
+                    entity.Inventory = new Inventory
+                    {
+                        Total = newTotal,
+                        Available = newAvailable
+                    };
+                }
+                else
+                {
+                    var currentTotal = entity.Inventory.Total;
+                    var currentAvailable = entity.Inventory.Available;
+
+                    var newTotal = invDto.Total ?? currentTotal;
+                    var newAvailable = invDto.Available ?? currentAvailable;
+
+                    if (newAvailable > newTotal) throw new BadRequestException(InventoryValidator.AvailableGreaterThanTotalErrorMessage);
+
+                    if (invDto.Total.HasValue) entity.Inventory.Total = invDto.Total.Value;
+                    if (invDto.Available.HasValue) entity.Inventory.Available = invDto.Available.Value;
+                }
+            }
+
+            entity.UpdatedAt = DateTime.UtcNow;
+
+            _productRepository.Update(entity);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            if (categoryNameForResponse is null)
+            {
+                categoryNameForResponse = string.Empty;
+            }
+
+            return ProductMapper.ToResponse(entity, categoryNameForResponse);
         }
 
         public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)

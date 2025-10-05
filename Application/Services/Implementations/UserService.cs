@@ -46,16 +46,7 @@ namespace Application.Services.Implementations
             var emailTaken = await _userRepository.ExistsAsync(u => u.Email.ToUpper() == normalizedEmail, ct);
             if (emailTaken) throw new ConflictException(UserValidator.UserEmailExists(dto.Email));
 
-            var entity = new User
-            {
-                Username = dto.Username.Trim(),
-                Email = dto.Email.Trim(),
-                Role = dto.Role,
-                IsActive = dto.IsActive,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString("N")
-            };
-
+            var entity = UserMapper.ToEntity(dto);
             entity.PasswordHash = _passwordHasher.HashPassword(entity, dto.Password);
 
             _userRepository.Add(entity);

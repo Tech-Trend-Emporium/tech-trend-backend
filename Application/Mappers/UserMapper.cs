@@ -10,7 +10,7 @@ namespace General.Mappers
 {
     public static class UserMapper
     {
-        public static User ToEntity(CreateUserRequest dto, string passwordHash)
+        public static User ToEntity(CreateUserRequest dto)
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
@@ -18,7 +18,6 @@ namespace General.Mappers
             {
                 Username = dto.Username.Trim(),
                 Email = dto.Email.Trim(),
-                PasswordHash = passwordHash,
                 Role = dto.Role,
                 IsActive = dto.IsActive,
                 CreatedAt = DateTime.UtcNow,
@@ -33,7 +32,6 @@ namespace General.Mappers
 
             if (!string.IsNullOrWhiteSpace(dto.Username)) entity.Username = dto.Username.Trim();
             if (!string.IsNullOrWhiteSpace(dto.Email)) entity.Email = dto.Email.Trim();
-
             if (dto.Role.HasValue) entity.Role = dto.Role.Value;
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
 

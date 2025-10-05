@@ -55,6 +55,10 @@ namespace Application.Services.Implementations
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
+            var productName = dto.Title.Trim().ToUpper();
+            var product = await _productRepository.GetAsync(p => p.Title.Trim().ToUpper() == productName, asTracking: true, ct: ct);
+            if (product is not null) throw new ConflictException(ProductValidator.ProductAlreadyExists(productName));
+
             var categoryName = dto.Category.Trim().ToUpper();
             var category = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == categoryName, asTracking: true, ct: ct);
             if (category is null) throw new NotFoundException(CategoryValidator.CategoryNotFound(categoryName));

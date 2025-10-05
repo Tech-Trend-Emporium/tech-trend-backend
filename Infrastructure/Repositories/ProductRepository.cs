@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace Application.Repository
 {
@@ -18,6 +19,11 @@ namespace Application.Repository
         public ProductRepository(AppDbContext db) : base(db)
         {
             _db = db;
+        }
+
+        public Task<Product?> GetAsync(Expression<Func<Product, bool>> predicate, bool asTracking = false, CancellationToken ct = default)
+        {
+            return (asTracking ? _db.Products.AsTracking() : _db.Products.AsNoTracking()).FirstOrDefaultAsync(predicate, ct);
         }
 
         public Task<IReadOnlyList<Product>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null)

@@ -24,17 +24,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure PostgreSQL connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+var dbContext = new AppDbContext(
+    new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(connectionString)
+        .Options);
 
-// Seed from external API
+// Seed from external API;
 var products = await SeedFromApi.FetchProductsAsync();
-SeedFromApi.AddCategoriesIfNotExistAsync(products, new AppDbContext(
-    new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(connectionString)
-        .Options)).Wait();
-SeedFromApi.AddProductsIfNotExistAsync(products, new AppDbContext(
-    new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(connectionString)
-        .Options)).Wait();
+SeedFromApi.AddCategoriesIfNotExistAsync(products, dbContext).Wait();
+SeedFromApi.AddProductsIfNotExistAsync(products,dbContext).Wait();
+var users = await SeedFromApi.FetchUsersAsync();
+SeedFromApi.AddUsersIfNotExistAsync(users, dbContext).Wait();
 
 // Azure Key Vault
 //var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";

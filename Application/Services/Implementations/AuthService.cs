@@ -140,7 +140,8 @@ namespace Application.Services.Implementations
             {
                 Email = dto.Email,
                 Username = dto.Username,
-                Role = Domain.Enums.Role.SHOPPER
+                Role = Domain.Enums.Role.SHOPPER,
+                CreatedAt = DateTime.UtcNow
             };
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
@@ -150,7 +151,9 @@ namespace Application.Services.Implementations
             return new SignUpResponse {
                 Id = user.Id, 
                 Email = user.Email, 
-                Username = user.Username
+                Username = user.Username,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
             };
         }
     }

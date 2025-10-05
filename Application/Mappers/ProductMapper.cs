@@ -15,35 +15,32 @@ namespace General.Mappers
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
-            var product = new Product
+            return new Product
             {
                 Title = dto.Title,
                 Price = dto.Price,
                 Description = dto.Description,
-                ImageUrl = dto.Image,
+                ImageUrl = dto.ImageUrl?.Trim(),
                 RatingRate = dto.RatingRate,
                 Count = dto.Count,
                 CategoryId = categoryId
             };
-
-            return product;
         }
 
-        public static Product ApplyUpdate(UpdateProductRequest dto, int categoryId)
+        public static void ApplyUpdate(Product entity, UpdateProductRequest dto, int? categoryId)
         {
-            var product = new Product
-            {
-                Id = dto.Id,
-                Title = dto.Title,
-                Price = dto.Price,
-                Description = dto.Description,
-                ImageUrl = dto.Image,
-                RatingRate = dto.RatingInfo.Rate,
-                Count = (int)dto.RatingInfo.Rate,
-                CategoryId = categoryId
-            };
+            if (entity == null) throw new ArgumentNullException(nameof(entity));
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
 
-            return product;
+            if (!string.IsNullOrWhiteSpace(dto.Title)) entity.Title = dto.Title;
+            if (dto.Price.HasValue) entity.Price = dto.Price.Value;
+            if (!string.IsNullOrWhiteSpace(dto.Description)) entity.Description = dto.Description;
+            if (!string.IsNullOrWhiteSpace(dto.ImageUrl)) entity.ImageUrl = dto.ImageUrl.Trim();
+            if (dto.RatingRate.HasValue) entity.RatingRate = dto.RatingRate.Value;
+            if (dto.Count.HasValue) entity.Count = dto.Count.Value;
+            if (categoryId.HasValue) entity.CategoryId = categoryId.Value;
+
+            entity.UpdatedAt = DateTime.UtcNow;
         }
 
         public static ProductResponse ToResponse(Product entity, string categoryName)

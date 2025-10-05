@@ -18,5 +18,10 @@ namespace Application.Repository
         {
             _db = db;
         }
+
+        public Task<IReadOnlyList<Product>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null)
+        {
+            return Task.FromResult((IReadOnlyList<Product>)_db.Products.Where(c => ids.Contains(c.Id)).ToList());
+        }
     }
 }

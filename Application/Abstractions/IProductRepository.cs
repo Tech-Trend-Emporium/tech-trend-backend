@@ -9,5 +9,6 @@ namespace Application.Abstraction
 {
     public interface IProductRepository : IEfRepository<Product>
     {
+        Task<IReadOnlyList<Product>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null);
     }
 }

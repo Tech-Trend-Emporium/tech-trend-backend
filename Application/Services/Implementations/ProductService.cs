@@ -149,10 +149,18 @@ namespace Application.Services.Implementations
             return true;
         }
 
-        public async Task<(IReadOnlyList<ProductResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default)
+        public async Task<(IReadOnlyList<ProductResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, string? category = null, CancellationToken ct = default)
         {
-            var listTask = await _productRepository.ListAsync(skip, take, ct);
-            var total = await _productRepository.CountAsync(null, ct);
+            int? categoryId = null;
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                var normalizedCategory = category.Trim().ToUpperInvariant();
+                var categoryEntity = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == normalizedCategory, asTracking: true, ct: ct);
+                if (categoryEntity != null) categoryId = categoryEntity.Id;
+            }
+
+            var listTask = await _productRepository.ListAsync(skip, take, categoryId, ct);
+            var total = await _productRepository.CountAsync(categoryId, ct);
 
             List<int> categoryIds = listTask.Select(e => e.CategoryId).Distinct().ToList();
             var categories = await _categoryRepository.ListByIdsAsync(ct, categoryIds);

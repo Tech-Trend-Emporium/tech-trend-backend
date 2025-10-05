@@ -33,9 +33,9 @@ namespace API.Controllers
         [Authorize]
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> List([FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)
+        public async Task<IActionResult> List([FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] string? category = null, CancellationToken ct = default)
         {
-            var (items, total) = await _productService.ListWithCountAsync(skip, take, ct);
+            var (items, total) = await _productService.ListWithCountAsync(skip, take, category, ct);
 
             return Ok(new { Total = total, Items = items });
         }

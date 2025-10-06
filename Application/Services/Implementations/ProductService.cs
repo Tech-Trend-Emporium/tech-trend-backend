@@ -21,6 +21,7 @@ namespace Application.Services.Implementations
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IUnitOfWork _unitOfWork;
+
         public ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork)
         {
             _productRepository = productRepository;

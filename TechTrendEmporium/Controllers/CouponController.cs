@@ -49,7 +49,7 @@ namespace API.Controllers
         }
 
         [Authorize(Roles = "ADMIN")]
-        [HttpPut("{id:int}")]
+        [HttpPatch("{id:int}")]
         [ProducesResponseType(typeof(CouponResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateCouponRequest dto, CancellationToken ct)
         {

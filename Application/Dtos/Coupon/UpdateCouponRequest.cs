@@ -10,13 +10,15 @@ namespace General.Dto.Coupon
 {
     public class UpdateCouponRequest : IValidatableObject
     {
-        [Range(0, 100, ErrorMessage = CouponValidator.DiscountRangeMessage)]
+        [Range(0.0, 1.0, ErrorMessage = CouponValidator.DiscountRangeMessage)]
         public decimal? Discount { get; set; }
 
         public bool? Active { get; set; }
 
+        [RegularExpression(CouponValidator.DateRegex, ErrorMessage = CouponValidator.ValidFromFormatMessage)]
         public DateTime? ValidFrom { get; set; }
 
+        [RegularExpression(CouponValidator.DateRegex, ErrorMessage = CouponValidator.ValidToFormatMessage)]
         public DateTime? ValidTo { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)

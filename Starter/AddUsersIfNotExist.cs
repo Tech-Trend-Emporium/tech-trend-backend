@@ -22,7 +22,6 @@ namespace Starter
                 }
                 var newUser = new Data.Entities.User
                 {
-                    Id = user.Id,
                     Username = user.Username,
                     Email = user.Email,
                     PasswordHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(user.Password ?? "DefaultPassword123!")), // Replace with proper hashing

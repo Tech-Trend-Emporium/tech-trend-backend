@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace General.Dto.Inventory
+namespace Application.Dtos.Inventory
 {
-    public class CreateInventoryRequest : IValidatableObject
+    public class CreateInventoryInlineRequest
     {
         [Required(ErrorMessage = InventoryValidator.TotalRequiredMessage)]
         [Range(0, int.MaxValue, ErrorMessage = InventoryValidator.TotalNonNegativeMessage)]
@@ -17,10 +17,6 @@ namespace General.Dto.Inventory
         [Required(ErrorMessage = InventoryValidator.AvailableRequiredMessage)]
         [Range(0, int.MaxValue, ErrorMessage = InventoryValidator.AvailableNonNegativeMessage)]
         public int Available { get; set; }
-
-        [Required(ErrorMessage = InventoryValidator.ProductIdRequiredMessage)]
-        [Range(1, int.MaxValue, ErrorMessage = InventoryValidator.ProductIdPositiveMessage)]
-        public int ProductId { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {

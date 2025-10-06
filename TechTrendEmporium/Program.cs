@@ -6,16 +6,18 @@ using Application.Services;
 using Application.Services.Implementations;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+using Azure.Identity;
 using Data.Entities;
 using Infrastructure.DbContexts;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Starter;
 using System.Security.Claims;
 using System.Text;
-using Starter;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+// Seed from external API
 var products = await SeedFromApi.FetchProductsAsync();
 SeedFromApi.AddCategoriesIfNotExistAsync(products, new AppDbContext(
     new DbContextOptionsBuilder<AppDbContext>()
@@ -33,7 +36,11 @@ SeedFromApi.AddProductsIfNotExistAsync(products, new AppDbContext(
         .UseNpgsql(connectionString)
         .Options)).Wait();
 
-
+// Azure Key Vault
+//var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";
+//builder.Configuration.AddAzureKeyVault(
+//    new Uri(keyVaultUrl),
+//    new DefaultAzureCredential());
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -78,6 +85,11 @@ builder.Services.AddAuthorization(opt =>
     opt.AddPolicy("RequireAdmin", p => p.RequireRole(nameof(Domain.Enums.Role.ADMIN)));
     opt.AddPolicy("CanManageProducts", p => p.RequireClaim("perm", "products.manage"));
 });
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy())
+    .AddDbContextCheck<AppDbContext>(name: "db");
 
 // Add repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -140,5 +152,19 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = r => r.Name == "self"
+});
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+    }
+});
 
 app.Run();

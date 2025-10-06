@@ -32,10 +32,10 @@ namespace Data.Entities
         public string? ImageUrl { get; set; }
 
         [Range(0, 5)]
-        public double? RatingRate { get; set; }
+        public double RatingRate { get; set; } = 0;
 
         [Range(0, int.MaxValue)]
-        public int? Count { get; set; }
+        public int Count { get; set; } = 0;
 
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

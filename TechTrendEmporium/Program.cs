@@ -31,10 +31,10 @@ var dbContext = new AppDbContext(
 
 // Seed from external API;
 var products = await SeedFromApi.FetchProductsAsync();
-SeedFromApi.AddCategoriesIfNotExistAsync(products, dbContext).Wait();
-SeedFromApi.AddProductsIfNotExistAsync(products,dbContext).Wait();
+await SeedFromApi.AddCategoriesIfNotExistAsync(products, dbContext);
+await SeedFromApi.AddProductsIfNotExistAsync(products,dbContext);
 var users = await SeedFromApi.FetchUsersAsync();
-SeedFromApi.AddUsersIfNotExistAsync(users, dbContext).Wait();
+await SeedFromApi.AddUsersIfNotExistAsync(users, dbContext);
 
 // Azure Key Vault
 //var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";

@@ -6,6 +6,7 @@ using General.Dto.Coupon;
 using General.Mappers;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -90,8 +91,12 @@ namespace Application.Services.Implementations
             var entity = await _couponRepository.GetByIdAsync(ct, id);
             if (entity is null) throw new NotFoundException(CouponValidator.CouponNotFound(id));
 
-            var newFrom = dto.ValidFrom ?? entity.ValidFrom;
-            var newTo = dto.ValidTo ?? entity.ValidTo;
+            DateTime? fromUtc = null, toUtc = null;
+            if (!string.IsNullOrWhiteSpace(dto.ValidFrom)) fromUtc = DateTime.ParseExact(dto.ValidFrom.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            if (!string.IsNullOrWhiteSpace(dto.ValidTo)) toUtc = DateTime.ParseExact(dto.ValidTo.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+            var newFrom = fromUtc ?? entity.ValidFrom;
+            var newTo = toUtc ?? entity.ValidTo;
 
             if (newTo.HasValue && newTo.Value < newFrom) throw new BadRequestException(CouponValidator.ValidToAfterValidFromErrorMessage);
 
@@ -102,7 +107,6 @@ namespace Application.Services.Implementations
 
             return CouponMapper.ToResponse(entity);
         }
-
 
         private async Task<string> GenerateUniqueCodeAsync(CancellationToken ct)
         {

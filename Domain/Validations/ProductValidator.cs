@@ -13,6 +13,7 @@ namespace Domain.Validations
 
         // Service validation messages
         public static string ProductNotFound(int id) => $"The product with id '{id}' not found.";
+        public static string ProductAlreadyExists(string title) => $"The product with title '{title}' already exists.";
 
         // DTO validation messages
         public const string TitleRequiredMessage = "Title is required.";

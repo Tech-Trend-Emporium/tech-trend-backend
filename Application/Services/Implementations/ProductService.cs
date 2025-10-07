@@ -35,20 +35,20 @@ namespace Application.Services.Implementations
             if (entity == null) return null;
 
             var category = await _categoryRepository.GetByIdAsync(ct, entity.CategoryId);
-            string categoryName = category?.Name ?? "Unknown";
 
-            return ProductMapper.ToResponse(entity, categoryName);
+            return ProductMapper.ToResponse(entity, category.Name);
         }
        
         public async Task<IReadOnlyList<ProductResponse>> ListAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
-            var entities = await _productRepository.ListAsync(skip, take, ct);   
-            
-            List<int> categoryIds = entities.Select(e => e.CategoryId).Distinct().ToList();
-            var categories = await _categoryRepository.ListByIdsAsync(ct, categoryIds);
-            List<string> categoryNames = entities.Select(e => categories.FirstOrDefault(c => c.Id == e.CategoryId)?.Name ?? "Unknown").ToList();
+            var entities = await _productRepository.ListAsync(skip, take, ct);
 
-            return ProductMapper.ToResponseList(entities, categoryNames);
+            var categoryIds = entities.Select(e => e.CategoryId).Distinct().ToList();
+            var categories = await _categoryRepository.ListByIdsAsync(ct, categoryIds);
+
+            var nameById = categories.ToDictionary(c => c.Id, c => c.Name);
+
+            return ProductMapper.ToResponseList(entities, nameById);
         }
         
         public async Task<ProductResponse> CreateAsync(CreateProductRequest dto, CancellationToken ct = default)
@@ -156,23 +156,24 @@ namespace Application.Services.Implementations
         public async Task<(IReadOnlyList<ProductResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, string? category = null, CancellationToken ct = default)
         {
             int? categoryId = null;
+
             if (!string.IsNullOrWhiteSpace(category))
             {
-                var normalizedCategory = category.Trim().ToUpperInvariant();
-                var categoryEntity = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == normalizedCategory, asTracking: true, ct: ct);
+                var normalized = category.Trim().ToUpperInvariant();
+                var categoryEntity = await _categoryRepository.GetAsync(c => c.Name.Trim().ToUpper() == normalized, asTracking: true, ct: ct);
+
                 if (categoryEntity != null) categoryId = categoryEntity.Id;
             }
 
-            var listTask = await _productRepository.ListAsync(skip, take, categoryId, ct);
+            var entities = await _productRepository.ListAsync(skip, take, categoryId, ct);
             var total = await _productRepository.CountAsync(categoryId, ct);
 
-            List<int> categoryIds = listTask.Select(e => e.CategoryId).Distinct().ToList();
+            var categoryIds = entities.Select(e => e.CategoryId).Distinct().ToList();
             var categories = await _categoryRepository.ListByIdsAsync(ct, categoryIds);
-            List<string> categoryNames = listTask.Select(e => categories.FirstOrDefault(c => c.Id == e.CategoryId)?.Name ?? "Unknown").ToList();
+            var nameById = categories.ToDictionary(c => c.Id, c => c.Name);
 
-            var productResponses = ProductMapper.ToResponseList(listTask, categoryNames);
-            
-            return (productResponses, total);
+            var items = ProductMapper.ToResponseList(entities, nameById);
+            return (items, total);
         }
 
         public async Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default)

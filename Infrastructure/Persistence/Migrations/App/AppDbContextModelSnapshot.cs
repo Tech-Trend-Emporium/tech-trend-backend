@@ -213,7 +213,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Count")
+                    b.Property<int>("Count")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -231,7 +231,7 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<double?>("RatingRate")
+                    b.Property<double>("RatingRate")
                         .HasColumnType("double precision");
 
                     b.Property<string>("Title")

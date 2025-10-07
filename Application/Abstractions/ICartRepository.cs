@@ -9,5 +9,7 @@ namespace Application.Abstraction
 {
     public interface ICartRepository : IEfRepository<Cart>
     {
+        Task<Cart?> GetByUserIdAsync(int userId, bool includeGraph = true, CancellationToken ct = default);
+        Task<Cart> CreateForUserAsync(int userId, CancellationToken ct = default);
     }
 }

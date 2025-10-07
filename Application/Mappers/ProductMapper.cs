@@ -52,22 +52,29 @@ namespace General.Mappers
                 Id = entity.Id,
                 Title = entity.Title,
                 Price = entity.Price,
-                Description = entity.Description,
-                ImageUrl = entity.ImageUrl,
+                Description = entity.Description ?? string.Empty,
+                ImageUrl = entity.ImageUrl ?? string.Empty,
                 RatingRate = entity.RatingRate,
                 Count = entity.Count,
-                Category = categoryName,
+                Category = categoryName ?? entity?.Category?.Name ?? "Unknown",
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt
             };
         }
 
-        public static List<ProductResponse> ToResponseList(IReadOnlyList<Product> entities, List<string> categoryNames)
+        public static List<ProductResponse> ToResponseList(IReadOnlyList<Product> entities, IReadOnlyDictionary<int, string> categoryNamesById)
         {
             if (entities == null) throw new ArgumentNullException(nameof(entities));
-            if (categoryNames == null) throw new ArgumentNullException(nameof(categoryNames));
+            if (categoryNamesById == null) throw new ArgumentNullException(nameof(categoryNamesById));
 
-            return entities.Select((entity, index) => ToResponse(entity, categoryNames[index])).ToList();
+            var list = new List<ProductResponse>(entities.Count);
+            foreach (var e in entities)
+            {
+                categoryNamesById.TryGetValue(e.CategoryId, out var name);
+                list.Add(ToResponse(e, name));
+            }
+
+            return list;
         }
     }
 }

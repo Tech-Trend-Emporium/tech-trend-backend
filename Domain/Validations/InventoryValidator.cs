@@ -16,7 +16,7 @@ namespace Domain.Validations
         public const string TotalNonNegativeMessage = "Total must be a non-negative integer.";
         public const string AvailableRequiredMessage = "Available is required.";
         public const string AvailableNonNegativeMessage = "Available must be a non-negative integer.";
-        public const string ProductIdRequiredMessage = "ProductId is required.";
-        public const string ProductIdPositiveMessage = "ProductId must be a positive integer.";
+        public const string ProductIdRequiredMessage = "Product ID is required.";
+        public const string ProductIdPositiveMessage = "Product ID must be a positive integer.";
     }
 }

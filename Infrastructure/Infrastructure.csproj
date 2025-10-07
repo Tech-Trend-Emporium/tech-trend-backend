@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="Persistence\Migrations\" />
+    <Folder Include="Persistence\Migrations\App\" />
   </ItemGroup>
 
 </Project>

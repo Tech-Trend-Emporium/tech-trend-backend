@@ -13,23 +13,25 @@ WORKDIR /src
 
 # Copia solución y TODOS los csproj de proyectos referenciados (lo tienes bien)
 COPY ["TechTrendEmporium.sln", "./"]
-COPY ["TechTrendEmporium/TechTrendEmporium.csproj", "TechTrendEmporium/"]
-COPY ["Application/Application.csproj", "Application/"]
-COPY ["Domain/Domain.csproj", "Domain/"]
-COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
-COPY ["Starter/Starter.csproj", "Starter/"]
+COPY ["TechTrendEmporium/*.csproj", "TechTrendEmporium/"]
+COPY ["Application/*.csproj", "Application/"]
+COPY ["Domain/*.csproj", "Domain/"]
+COPY ["Infrastructure/*.csproj", "Infrastructure/"]
+COPY ["Starter/*.csproj", "Starter/"]
 
-RUN dotnet restore "./TechTrendEmporium/TechTrendEmporium.csproj"
+COPY NuGet.Docker.config ./NuGet.config
+
+RUN dotnet restore "./TechTrendEmporium/API.csproj"
 
 # Copia el resto del código
 COPY . .
 
 WORKDIR "/src/TechTrendEmporium"
-RUN dotnet build "./TechTrendEmporium.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
+RUN dotnet build "./API.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./TechTrendEmporium.csproj" -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish "./API.csproj" -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
 
 # Imagen final
 FROM base AS final

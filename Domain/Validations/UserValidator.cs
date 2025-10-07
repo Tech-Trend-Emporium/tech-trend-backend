@@ -12,6 +12,7 @@ namespace Domain.Validations
         public static string UserUsernameExists(string username) => $"The user with username '{username}' already exists.";
         public static string UserEmailExists(string email) => $"The user with email '{email}' already exists.";
         public static string UserNotFound(int id) => $"The user with id '{id}' not found.";
+        public static string UserNotFound(string username) => $"The user with username '{username}' not found.";
 
         // DTO validation messages
         public const int UsernameMinLength = 3;

@@ -11,5 +11,6 @@ namespace Application.Abstraction
     public interface IUserRepository : IEfRepository<User>
     {
         Task<User?> GetAsync(Expression<Func<User, bool>> predicate, bool asTracking = false, CancellationToken ct = default);
+        Task<IReadOnlyList<User>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null);
     }
 }

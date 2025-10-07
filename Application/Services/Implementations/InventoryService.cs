@@ -26,27 +26,28 @@ namespace Application.Services.Implementations
 
         public async Task<IReadOnlyList<InventoryResponse>> ListAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
-            var entities = await _inventoryRepository.ListAsync(skip, take, ct);
+            var inventories = await _inventoryRepository.ListAsync(skip, take, ct);
 
-            List<int> productIds = entities.Select(e => e.ProductId).Distinct().ToList();
+            var productIds = inventories.Select(i => i.ProductId).Distinct().ToList();
             var products = await _productRepository.ListByIdsAsync(ct, productIds);
-            List<string> productNames = entities.Select(e => products.FirstOrDefault(p => p.Id == e.ProductId)?.Title ?? "Unknown").ToList();
 
-            return InventoryMapper.ToResponseList(entities, productNames);
+            var nameById = products.ToDictionary(p => p.Id, p => p.Title);
+
+            return InventoryMapper.ToResponseList(inventories, nameById);
         }
 
         public async Task<(IReadOnlyList<InventoryResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
-            var listTask = await _inventoryRepository.ListAsync(skip, take, ct);
+            var inventories = await _inventoryRepository.ListAsync(skip, take, ct);
             var total = await _inventoryRepository.CountAsync(null, ct);
 
-            List<int> productIds = listTask.Select(e => e.ProductId).Distinct().ToList();
+            var productIds = inventories.Select(i => i.ProductId).Distinct().ToList();
             var products = await _productRepository.ListByIdsAsync(ct, productIds);
-            List<string> productNames = listTask.Select(e => products.FirstOrDefault(p => p.Id == e.ProductId)?.Title ?? "Unknown").ToList();
 
-            var inventoryResponses = InventoryMapper.ToResponseList(listTask, productNames);
+            var nameById = products.ToDictionary(p => p.Id, p => p.Title);
 
-            return (inventoryResponses, total);
+            var items = InventoryMapper.ToResponseList(inventories, nameById);
+            return (items, total);
         }
     }
 }

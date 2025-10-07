@@ -24,10 +24,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:8080"
-      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=techtrend_db;Username=techtrend_user;Password=TechTrendPass123;Ssl Mode=Disable"
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=techtrend_db;Username=techtrend_user;Password=TechTrendPass123;SSL Mode=Disable"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=techtrend_db;Username=techtrend_user;Password=TechTrendPass123;SSL Mode=Disable"
     ports:
-      - "8080:8080"
+      - "5000:8080"
 
 volumes:
   pgdata:

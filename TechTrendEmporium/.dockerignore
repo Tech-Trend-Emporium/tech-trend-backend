@@ -1,7 +1,6 @@
 **/.classpath
 **/.dockerignore
 **/.env
-#**/.git
 **/.gitignore
 **/.project
 **/.settings
@@ -29,8 +28,8 @@ README.md
 !.git/packed-refs
 !.git/refs/heads/**
 
-**/bin/
-**/obj/
+**/bin
+**/obj
 **/.vs/
 **/.vscode/
 **/.idea/
@@ -38,7 +37,7 @@ README.md
 **/*.suo
 **/*TestResults*/
 **/*.trx
-#.git
+.git
 .gitignore
 
 !API/**

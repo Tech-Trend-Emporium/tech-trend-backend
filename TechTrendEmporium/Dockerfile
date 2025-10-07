@@ -1,4 +1,4 @@
-# Runtime (aspnet) — SIN usuario raro por defecto
+ï»¿# Runtime (aspnet) â€” SIN usuario raro por defecto
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
@@ -11,7 +11,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copia solución y TODOS los csproj de proyectos referenciados (lo tienes bien)
+# Copia soluciÃ³n y TODOS los csproj de proyectos referenciados (lo tienes bien)
 COPY ["TechTrendEmporium.sln", "./"]
 COPY ["TechTrendEmporium/*.csproj", "TechTrendEmporium/"]
 COPY ["Application/*.csproj", "Application/"]
@@ -19,22 +19,20 @@ COPY ["Domain/*.csproj", "Domain/"]
 COPY ["Infrastructure/*.csproj", "Infrastructure/"]
 COPY ["Starter/*.csproj", "Starter/"]
 
-COPY NuGet.Docker.config ./NuGet.config
-
 RUN dotnet restore "./TechTrendEmporium/API.csproj"
 
-# Copia el resto del código
+# Copia el resto del cÃ³digo
 COPY . .
 
 WORKDIR "/src/TechTrendEmporium"
-RUN dotnet build "./API.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
+RUN dotnet build "./API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./API.csproj" -c $BUILD_CONFIGURATION -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish "./API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Imagen final
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "TechTrendEmporium.dll"]
+ENTRYPOINT ["dotnet", "API.dll"]

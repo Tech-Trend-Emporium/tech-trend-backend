@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations.App
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251001035810_InitAuth")]
-    partial class InitAuth
+    [Migration("20251007013957_InitApp")]
+    partial class InitApp
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -216,7 +216,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Count")
+                    b.Property<int>("Count")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -234,7 +234,7 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<double?>("RatingRate")
+                    b.Property<double>("RatingRate")
                         .HasColumnType("double precision");
 
                     b.Property<string>("Title")

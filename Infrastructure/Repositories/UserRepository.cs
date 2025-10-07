@@ -25,5 +25,10 @@ namespace Application.Repository
         {
             return (asTracking ? _db.Users.AsTracking() : _db.Users.AsNoTracking()).FirstOrDefaultAsync(predicate, ct);
         }
+
+        public Task<IReadOnlyList<User>> ListByIdsAsync(CancellationToken ct = default, List<int> ids = null)
+        {
+            return Task.FromResult((IReadOnlyList<User>)_db.Users.Where(c => ids.Contains(c.Id)).ToList());
+        }
     }
 }

@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: techtrend_user
       POSTGRES_PASSWORD: TechTrendPass123
     ports:
-      - "5433:5432"
+      - "5433:5432"               
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,6 +17,17 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=techtrend_db;Username=techtrend_user;Password=TechTrendPass123;Ssl Mode=Disable"
+    ports:
+      - "8080:8080"
 
 volumes:
   pgdata:

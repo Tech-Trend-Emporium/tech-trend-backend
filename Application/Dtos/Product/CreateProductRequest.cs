@@ -37,7 +37,7 @@ namespace General.Dto.Product
         [Required(ErrorMessage = ProductValidator.CategoryRequiredMessage)]
         [StringLength(ProductValidator.CategoryMaxLength, MinimumLength = ProductValidator.CategoryMinLength, ErrorMessage = ProductValidator.CategoryLengthMessage)]
         [RegularExpression(ProductValidator.CategoryRegex, ErrorMessage = ProductValidator.CategoryRegexMessage)]
-        public string Category { get; set; }
+        public string Category { get; set; } = null!;
 
         public CreateInventoryInlineRequest? Inventory { get; set; }
 

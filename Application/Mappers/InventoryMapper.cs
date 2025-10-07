@@ -23,7 +23,7 @@ namespace General.Mappers
             };
         }
 
-        public static InventoryResponse ToResponse(Inventory entity, string productName)
+        public static InventoryResponse ToResponse(Inventory entity, string? productName = null)
         {
             if (entity is null) throw new ArgumentNullException(nameof(entity));
 
@@ -32,16 +32,23 @@ namespace General.Mappers
                 Id = entity.Id,
                 Total = entity.Total,
                 Available = entity.Available,
-                Product = productName
+                Product = productName ?? entity.Product?.Title ?? "Unknown"
             };
         }
 
-        public static List<InventoryResponse> ToResponseList(IReadOnlyList<Inventory> entities, List<string> productNames)
+        public static List<InventoryResponse> ToResponseList(IReadOnlyList<Inventory> entities, IReadOnlyDictionary<int, string> productNamesById)
         {
-            if (entities == null) throw new ArgumentNullException(nameof(entities));
-            if (productNames == null) throw new ArgumentNullException(nameof(productNames));
+            if (entities is null) throw new ArgumentNullException(nameof(entities));
+            if (productNamesById is null) throw new ArgumentNullException(nameof(productNamesById));
 
-            return entities.Select((entity, index) => ToResponse(entity, productNames[index])).ToList();
+            var list = new List<InventoryResponse>(entities.Count);
+            foreach (var e in entities)
+            {
+                productNamesById.TryGetValue(e.ProductId, out var name);
+                list.Add(ToResponse(e, name));
+            }
+
+            return list;
         }
     }
 }

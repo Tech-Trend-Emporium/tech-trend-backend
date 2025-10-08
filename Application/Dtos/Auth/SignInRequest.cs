@@ -16,8 +16,6 @@ namespace Application.Dtos.Auth
         public string EmailOrUsername { get; set; } = null!;
 
         [Required(ErrorMessage = AuthValidator.PasswordRequiredMessage)]
-        [StringLength(AuthValidator.PasswordMaxLength, MinimumLength = AuthValidator.PasswordMinLength, ErrorMessage = AuthValidator.PasswordLengthMessage)]
-        [RegularExpression(AuthValidator.PasswordRegex, ErrorMessage = AuthValidator.PasswordRegexMessage)]
         public string Password { get; set; } = null!;
     }
 }

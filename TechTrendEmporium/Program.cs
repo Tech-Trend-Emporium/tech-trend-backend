@@ -5,8 +5,6 @@ using Application.Repository;
 using Application.Services;
 using Application.Services.Implementations;
 using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
-using Azure.Identity;
 using Data.Entities;
 using Infrastructure.DbContexts;
 using Infrastructure.Repositories;
@@ -22,25 +20,9 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure PostgreSQL connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
-var dbContext = new AppDbContext(
-    new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(connectionString)
-        .Options);
-
-// Seed from external API;
-var products = await SeedFromApi.FetchProductsAsync();
-await SeedFromApi.AddCategoriesIfNotExistAsync(products, dbContext);
-await SeedFromApi.AddProductsIfNotExistAsync(products,dbContext);
-var users = await SeedFromApi.FetchUsersAsync();
-await SeedFromApi.AddUsersIfNotExistAsync(users, dbContext);
-
-// Azure Key Vault
-//var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";
-//builder.Configuration.AddAzureKeyVault(
-//    new Uri(keyVaultUrl),
-//    new DefaultAzureCredential());
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); 
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)); 
+var dbContext = new AppDbContext( new DbContextOptionsBuilder<AppDbContext>() .UseNpgsql(connectionString) .Options);
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -142,6 +124,20 @@ builder.Services.AddSwaggerGen();
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+
+    await ctx.Database.MigrateAsync();
+
+    var products = await SeedFromApi.FetchProductsAsync();
+    await SeedFromApi.AddCategoriesIfNotExistAsync(products, ctx);
+    await SeedFromApi.AddProductsIfNotExistAsync(products, ctx);
+
+    var users = await SeedFromApi.FetchUsersAsync();
+    await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
+}
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

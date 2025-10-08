@@ -17,5 +17,6 @@ namespace General.Dto.Cart
         public decimal? Total { get; set; }
         public string? CouponCode { get; set; }
         public IReadOnlyList<CartItemResponse> Items { get; set; } = new List<CartItemResponse>();
+        public DateTime CreatedAt { get; set; }
     }
 }

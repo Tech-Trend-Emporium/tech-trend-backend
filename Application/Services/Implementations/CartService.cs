@@ -100,7 +100,7 @@ namespace Application.Services.Implementations
 
             if (item is null)
             {
-                item = new CartItem { CartId = cart.Id, ProductId = dto.ProductId, Quantity = dto.Quantity };
+                item = CartMapper.ToEntity(dto, cart.Id);
                 cart.Items.Add(item);
             }
             else

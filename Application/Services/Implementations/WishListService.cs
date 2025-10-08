@@ -99,7 +99,7 @@ namespace Application.Services.Implementations
             var cart = await _cartRepository.GetByUserIdAsync(userId, includeGraph: true, ct) ?? await _cartRepository.CreateForUserAsync(userId, ct);
 
             var existing = cart.Items.FirstOrDefault(i => i.ProductId == productId);
-            if (existing is null) cart.Items.Add(new CartItem { CartId = cart.Id, ProductId = productId, Quantity = 1 });
+            if (existing is null) cart.Items.Add(CartMapper.ToEntity(cart.Id, productId, 1));
 
             wl.RemoveItem(productId);
 

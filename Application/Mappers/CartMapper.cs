@@ -44,5 +44,31 @@ namespace General.Mappers
                 CreatedAt = entity.CreatedAt
             };
         }
+
+        public static CartItem ToEntity(AddCartItemRequest dto, int cartId)
+        {
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+            return new CartItem
+            {
+                CartId = cartId,
+                ProductId = dto.ProductId,
+                Quantity = dto.Quantity
+            };
+        }
+
+        public static CartItem ToEntity(int cartId, int productId, int quantity)
+        {
+            if (productId <= 0) throw new ArgumentOutOfRangeException(nameof(productId));
+            if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+            if (cartId <= 0) throw new ArgumentOutOfRangeException(nameof(cartId));
+
+            return new CartItem
+            {
+                CartId = cartId,
+                ProductId = productId,
+                Quantity = quantity
+            };
+        }
     }
 }

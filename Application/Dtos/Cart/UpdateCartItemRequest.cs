@@ -12,11 +12,11 @@ namespace Application.Dtos.Cart
     {
         [Required(ErrorMessage = CartValidator.ProductIdRequiredMessage)]
         [Range(1, int.MaxValue, ErrorMessage = CartValidator.ProductIdRangeMessage)]
-        public int? ProductId { get; set; }
+        public int ProductId { get; set; }
 
         [Required(ErrorMessage = CartValidator.QuantityRequiredMessage)]
         [Range(1, 100, ErrorMessage = CartValidator.QuantityRangeMessage)]
-        public int? Quantity { get; set; }
+        public int Quantity { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {

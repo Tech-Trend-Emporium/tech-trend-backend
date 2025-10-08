@@ -10,6 +10,7 @@ namespace Domain.Validations
     {
         // Service validation messages
         public static string CouponNotFound(int id) => $"The coupon with id '{id}' not found.";
+        public static string CouponNotFound(string code) => $"The coupon with code '{code}' not found.";
 
         // Entity validation messages
         public const string ValidToAfterValidFromErrorMessage = "The field ValidTo must be after ValidFrom field.";

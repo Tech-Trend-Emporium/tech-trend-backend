@@ -9,5 +9,7 @@ namespace Application.Abstraction
 {
     public interface IWishListRepository : IEfRepository<WishList>
     {
+        Task<WishList?> GetByUserIdAsync(int userId, bool includeGraph = true, CancellationToken ct = default);
+        Task<WishList> CreateForUserAsync(int userId, CancellationToken ct = default);
     }
 }

@@ -84,7 +84,7 @@ namespace Application.Services.Implementations
             return CartMapper.ToResponse(cart);
         }
 
-        public async Task<CartResponse> AddItemAsync(int userId, CreateCartItemRequest dto, CancellationToken ct = default)
+        public async Task<CartResponse> AddItemAsync(int userId, AddCartItemRequest dto, CancellationToken ct = default)
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
             if (dto.Quantity <= 0) throw new BadRequestException(CartValidator.QuantityPositiveMessage);

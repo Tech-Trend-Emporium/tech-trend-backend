@@ -1,8 +1,6 @@
 ﻿using Application.Dtos.Cart;
-using Application.Exceptions;
 using Application.Services;
 using Asp.Versioning;
-using Data.Entities;
 using General.Dto.Cart;
 using General.Dto.Category;
 using Microsoft.AspNetCore.Authorization;
@@ -17,8 +15,7 @@ namespace API.Controllers
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
-        private int CurrentUserId => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id
-            : throw new UnauthorizedException("No se pudo determinar el usuario.");
+        private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         public CartController(ICartService cartService)
         {
@@ -36,7 +33,7 @@ namespace API.Controllers
         [Authorize(Roles = "SHOPPER")]
         [HttpPost("items")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
-        public async Task<ActionResult<CartResponse>> AddItem([FromBody] CreateCartItemRequest dto, CancellationToken ct)
+        public async Task<ActionResult<CartResponse>> AddItem([FromBody] AddCartItemRequest dto, CancellationToken ct)
         {
             return Ok(await _cartService.AddItemAsync(CurrentUserId, dto, ct));
         }
@@ -52,7 +49,7 @@ namespace API.Controllers
         [Authorize(Roles = "SHOPPER")]
         [HttpDelete("items/{productId:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
-        public async Task<ActionResult<CartResponse>> RemoveItem(int productId, CancellationToken ct)
+        public async Task<ActionResult<CartResponse>> RemoveItem([FromRoute] int productId, CancellationToken ct)
         {
             return Ok(await _cartService.RemoveItemAsync(CurrentUserId, productId, ct));
         }

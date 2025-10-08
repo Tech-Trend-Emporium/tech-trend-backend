@@ -20,8 +20,8 @@ namespace Application.Services.Implementations
 
         public CouponService(ICouponRepository couponRepository, IUnitOfWork unitOfWork)
         {
-            this._couponRepository = couponRepository;
-            this._unitOfWork = unitOfWork;
+            _couponRepository = couponRepository;
+            _unitOfWork = unitOfWork;
         }
 
         public Task<int> CountAsync(CancellationToken ct = default)

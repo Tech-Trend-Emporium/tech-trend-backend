@@ -21,7 +21,7 @@ namespace API.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetById(int id, CancellationToken ct)
+        public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
             var result = await _categoryService.GetByIdAsync(id, ct);
 
@@ -51,7 +51,7 @@ namespace API.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(CategoryResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest dto, CancellationToken ct)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCategoryRequest dto, CancellationToken ct)
         {
             var updated = await _categoryService.UpdateAsync(id, dto, ct);
 
@@ -61,7 +61,7 @@ namespace API.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
         {
             var deleted = await _categoryService.DeleteAsync(id, ct);
 

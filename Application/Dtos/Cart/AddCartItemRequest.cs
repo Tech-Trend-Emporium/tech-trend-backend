@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.Dtos.Cart
 {
-    public class CreateCartItemRequest : IValidatableObject
+    public class AddCartItemRequest : IValidatableObject
     {
         [Required(ErrorMessage = CartValidator.ProductIdRequiredMessage)]
         [Range(1, int.MaxValue, ErrorMessage = CartValidator.ProductIdRangeMessage)]

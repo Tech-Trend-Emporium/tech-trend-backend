@@ -10,5 +10,9 @@ namespace Domain.Validations
     {
         // Entity validation messages
         public const string ProductAlreadyInWishListErrorMessage = "The product is already in the wish list.";
+
+        // DTO validation messages
+        public const string ProductIdRequiredMessage = "Product ID is required.";
+        public const string ProductIdRangeMessage = "Product ID must be greater than 0.";
     }
 }

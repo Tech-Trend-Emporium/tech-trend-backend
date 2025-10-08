@@ -22,7 +22,7 @@ namespace API.Controllers
         [Authorize]
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ReviewResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetById(int id, CancellationToken ct)
+        public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
             var result = await _reviewService.GetByIdAsync(id, ct);
 
@@ -42,7 +42,7 @@ namespace API.Controllers
         [Authorize]
         [HttpGet("product/{productId:int}")]
         [ProducesResponseType(typeof(IReadOnlyList<ReviewResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> ListByProduct(int productId, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)
+        public async Task<IActionResult> ListByProduct([FromRoute] int productId, [FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)
         {
             var (items, total) = await _reviewService.ListByProductWithCountAsync(productId, skip, take, ct);
 
@@ -62,7 +62,7 @@ namespace API.Controllers
         [Authorize]
         [HttpPatch("{id:int}")]
         [ProducesResponseType(typeof(ReviewResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateReviewRequest dto, CancellationToken ct)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateReviewRequest dto, CancellationToken ct)
         {
             var updated = await _reviewService.UpdateAsync(id, dto, ct);
 
@@ -72,7 +72,7 @@ namespace API.Controllers
         [Authorize]
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
         {
             var deleted = await _reviewService.DeleteAsync(id, ct);
 

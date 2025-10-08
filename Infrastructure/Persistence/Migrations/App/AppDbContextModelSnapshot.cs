@@ -39,6 +39,14 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("Operation")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PayloadJson")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<DateTime>("RequestedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -47,6 +55,9 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.Property<bool>("State")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("TargetId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");

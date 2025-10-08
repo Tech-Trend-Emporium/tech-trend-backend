@@ -2,9 +2,11 @@
 using Application.Abstractions;
 using Application.Dtos.Auth;
 using Application.Exceptions;
+using Application.Mappers;
 using Data.Entities;
 using Domain.Entities;
 using Domain.Validations;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -55,15 +57,7 @@ namespace Application.Services.Implementations
 
             await _unitOfWork.SaveChangesAsync(ct);
 
-            return new SignInResponse
-            {
-                AccessToken = access,
-                AccessTokenExpiresAtUtc = exp,
-                RefreshToken = newRt.Token,
-                RefreshTokenExpiresAtUtc = newRt.ExpiresAtUtc,
-                Role = user.Role.ToString(),
-                SessionId = existing.SessionId
-            };
+            return AuthMapper.ToResponse(access, exp, newRt, user, existing.SessionId);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest dto, CancellationToken ct = default)
@@ -88,15 +82,7 @@ namespace Application.Services.Implementations
 
             await _unitOfWork.SaveChangesAsync(ct);
 
-            return new SignInResponse
-            {
-                AccessToken = access,
-                AccessTokenExpiresAtUtc = exp,
-                RefreshToken = rt.Token,
-                RefreshTokenExpiresAtUtc = rt.ExpiresAtUtc,
-                Role = user.Role.ToString(),
-                SessionId = session.Id
-            };
+            return AuthMapper.ToResponse(access, exp, rt, user, session);
         }
 
         public async Task SignOut(SignOutRequest dto, int currentUserId, CancellationToken ct = default)
@@ -148,13 +134,7 @@ namespace Application.Services.Implementations
             _userRepository.Add(user);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            return new SignUpResponse {
-                Id = user.Id, 
-                Email = user.Email, 
-                Username = user.Username,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt
-            };
+            return AuthMapper.ToResponse(user);
         }
     }
 }

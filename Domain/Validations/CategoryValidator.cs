@@ -17,8 +17,8 @@ namespace Domain.Validations
         public const int NameMinLength = 3;
         public const int NameMaxLength = 120;
         public const string NameRegex = @"^[a-zA-Z0-9\s\-\.\,&]+$";
-        public const string NameRequiredMessage = "Name is required.";
-        public const string NameLengthMessage = "Name must be between 3 and 120 characters long.";
-        public const string NameRegexMessage = "Name can only contain letters, numbers, spaces, and the following characters: - . , &";
+        public const string NameRequiredMessage = "The field Name is required.";
+        public const string NameLengthMessage = "The field Name must be between 3 and 120 characters long.";
+        public const string NameRegexMessage = "The field Name can only contain letters, numbers, spaces, and the following characters: - . , &";
     }
 }

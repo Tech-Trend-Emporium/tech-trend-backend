@@ -27,7 +27,9 @@ namespace Starter
                     Username = user.Username,
                     Email = user.Email,
                     CreatedAt = DateTime.UtcNow,
-                    Role =  user.Id == 1 ? Role.ADMIN : Role.SHOPPER, // First user as ADMIN, others as SHOPPER
+                    Role = user.Id == 1 ? Role.ADMIN
+                        : user.Id == 2 ? Role.EMPLOYEE
+                        : Role.SHOPPER,
                     IsActive = true
                 };
                 var rawPassword = user.Password ?? "DefaultPassword123!";

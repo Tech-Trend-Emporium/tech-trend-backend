@@ -9,5 +9,7 @@ namespace Application.Abstraction
 {
     public interface IApprovalJobRepository : IEfRepository<ApprovalJob>
     {
+        Task<ApprovalJob?> GetByIdTrackedAsync(int id, CancellationToken ct = default);
+        Task<IReadOnlyList<ApprovalJob>> ListPendingAsync(int skip, int take, CancellationToken ct = default);
     }
 }

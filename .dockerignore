@@ -41,10 +41,12 @@ README.md
 .git
 .gitignore
 
-!API/**
-!Application/**
-!Domain/**
-!Infrastructure/**
-!TechTrendEmporium.sln
-!Dockerfile
-!.dockerignore
+ !API/**
+ !Application/**
+ !Domain/**
+ !Infrastructure/**
+ !TechTrendEmporium.sln
+ !Dockerfile
+ !.dockerignore
++!Starter/**
++!TechTrendEmporium/**

@@ -1,3 +1,4 @@
+using API.Filters;
 using API.Middlewares;
 using Application.Abstraction;
 using Application.Abstractions;
@@ -13,6 +14,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
 using Starter;
 using System.Security.Claims;
 using System.Text;
@@ -23,6 +26,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)); 
 var dbContext = new AppDbContext( new DbContextOptionsBuilder<AppDbContext>() .UseNpgsql(connectionString) .Options);
+
+// Configure Serilog
+builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -120,7 +126,22 @@ apiVersioningBuilder.AddApiExplorer(o =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    c.OperationFilter<AuthorizeCheckOperationFilter>();
+});
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
@@ -152,6 +173,7 @@ if (useHttps)
     app.UseHttpsRedirection();
 }
 
+app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();

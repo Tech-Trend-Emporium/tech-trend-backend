@@ -12,7 +12,7 @@ namespace Domain.Validations
         public const string ProductAlreadyInWishListErrorMessage = "The product is already in the wish list.";
 
         // DTO validation messages
-        public const string ProductIdRequiredMessage = "Product ID is required.";
-        public const string ProductIdRangeMessage = "Product ID must be greater than 0.";
+        public const string ProductIdRequiredMessage = "The field ProductId is required.";
+        public const string ProductIdRangeMessage = "The field ProductId must be greater than 0.";
     }
 }

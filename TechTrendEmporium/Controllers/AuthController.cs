@@ -1,6 +1,7 @@
 ﻿using Application.Dtos.Auth;
 using Application.Services;
 using Asp.Versioning;
+using General.Dto.ApprovalJob;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -20,6 +21,7 @@ namespace API.Controllers
         }
 
         [HttpPost("sign-up")]
+        [ProducesResponseType(typeof(SignUpResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<SignUpResponse>> SignUp([FromBody] SignUpRequest dto, CancellationToken ct)
         {
             var result = await _authService.SignUp(dto, ct);
@@ -28,6 +30,7 @@ namespace API.Controllers
         }
 
         [HttpPost("sign-in")]
+        [ProducesResponseType(typeof(SignInResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<SignInResponse>> SignIn([FromBody] SignInRequest dto, CancellationToken ct)
         {
             var result = await _authService.SignIn(dto, ct);
@@ -36,6 +39,7 @@ namespace API.Controllers
         }
 
         [HttpPost("refresh")]
+        [ProducesResponseType(typeof(SignInResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<SignInResponse>> Refresh([FromBody] RefreshTokenRequest dto, CancellationToken ct)
         {
             var result = await _authService.RefreshToken(dto, ct);
@@ -45,6 +49,7 @@ namespace API.Controllers
 
         [Authorize]
         [HttpPost("sign-out")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> SignOut([FromBody] SignOutRequest dto, CancellationToken ct)
         {
             var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

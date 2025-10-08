@@ -32,7 +32,7 @@ namespace General.Mappers
                 Id = entity.Id,
                 Total = entity.Total,
                 Available = entity.Available,
-                Product = productName ?? entity.Product?.Title ?? "Unknown"
+                ProductName = productName ?? entity.Product?.Title ?? "Unknown"
             };
         }
 

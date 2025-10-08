@@ -1,6 +1,7 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
 using Application.Exceptions;
+using Domain.Enums;
 using Domain.Validations;
 using General.Dto.Category;
 using General.Mappers;

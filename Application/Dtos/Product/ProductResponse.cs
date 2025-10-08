@@ -17,7 +17,7 @@ namespace General.Dto.Product
         public string ImageUrl { get; set; } = null!;
         public double RatingRate { get; set; }
         public int Count { get; set; }
-        public string Category { get; set; }
+        public string Category { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

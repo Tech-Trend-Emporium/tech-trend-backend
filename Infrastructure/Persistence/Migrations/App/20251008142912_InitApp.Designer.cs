@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Persistence.Migrations.App
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251007013957_InitApp")]
+    [Migration("20251008142912_InitApp")]
     partial class InitApp
     {
         /// <inheritdoc />
@@ -42,6 +42,14 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("Operation")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PayloadJson")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<DateTime>("RequestedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -50,6 +58,9 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.Property<bool>("State")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("TargetId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");

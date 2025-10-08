@@ -2,6 +2,7 @@
 using Application.Abstractions;
 using Application.Exceptions;
 using Data.Entities;
+using Domain.Enums;
 using Domain.Validations;
 using General.Dto.Product;
 using General.Mappers;

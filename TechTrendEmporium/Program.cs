@@ -6,10 +6,12 @@ using Application.Repository;
 using Application.Services;
 using Application.Services.Implementations;
 using Asp.Versioning;
+using Azure.Identity;
 using Data.Entities;
 using Infrastructure.DbContexts;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -22,10 +24,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsProduction())
+{
+    // Load secrets from Azure Key Vault in production
+    var kvUrl = Environment.GetEnvironmentVariable("KEYVAULT_URL") ?? "https://ttekv.vault.azure.net/";
+    builder.Configuration.AddAzureKeyVault(new Uri(kvUrl), new DefaultAzureCredential());
+}
+
 // Configure PostgreSQL connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString)); 
-var dbContext = new AppDbContext( new DbContextOptionsBuilder<AppDbContext>() .UseNpgsql(connectionString) .Options);
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString, npg => npg.EnableRetryOnFailure(5)));
 
 // Configure Serilog
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
@@ -75,9 +83,7 @@ builder.Services.AddAuthorization(opt =>
 });
 
 // Add health checks
-builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy())
-    .AddDbContextCheck<AppDbContext>(name: "db");
+builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy()).AddDbContextCheck<AppDbContext>(name: "db");
 
 // Add repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -159,6 +165,7 @@ using (var scope = app.Services.CreateScope())
     var users = await SeedFromApi.FetchUsersAsync();
     await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
 }
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -167,22 +174,16 @@ if (app.Environment.IsDevelopment())
 
 // Enforce HTTPS in production
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);
-if (useHttps)
-{
-    app.UseHsts();
-    app.UseHttpsRedirection();
-}
+if (useHttps) { app.UseHsts(); app.UseHttpsRedirection(); }
 
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = r => r.Name == "self"
-});
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = r => r.Name == "self" });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = _ => true,
     ResultStatusCodes =

@@ -134,25 +134,29 @@ jobs:
             --label "${DEPLOY_LABEL}" \
             --revision "${{ steps.newrev.outputs.REV_NAME }}"
 
-      - name: Wait for readiness on green via label URL
+      - name: Wait for readiness on new revision (TLS-safe)
         shell: bash
         run: |
           set -euo pipefail
-          BASE_FQDN="${{ steps.traffic.outputs.FQDN }}"
-          URL="https://${{ env.DEPLOY_LABEL }}.${BASE_FQDN}${HEALTH_PATH}"
 
-          echo "Probing: $URL"
-          # Health probes should be used to confirm readiness before traffic shift. :contentReference[oaicite:4]{index=4}
-          for i in {1..60}; do
-            HTTP_CODE=$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$URL" || true)
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "Green is healthy (HTTP 200)."
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Green did not become healthy in time."
-          exit 1
+          # i.e. tteaca.thankfulfield-0657673c.eastus2.azurecontainerapps.io
+            BASE_FQDN="${{ steps.traffic.outputs.FQDN }}"
+            ENV_SUFFIX="${BASE_FQDN#*.}"
+
+            REV_NAME="${{ steps.newrev.outputs.REV_NAME }}"
+            URL="https://${REV_NAME}.${ENV_SUFFIX}${HEALTH_PATH}"
+
+            echo "Probing revision directly: $URL"
+            for i in {1..60}; do
+                HTTP_CODE=$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$URL" || true)
+                if [ "$HTTP_CODE" = "200" ]; then
+                echo "Revision is healthy (HTTP 200)."
+                exit 0
+                fi
+                sleep 5
+            done
+            echo "Revision did not become healthy in time."
+            exit 1
 
       - name: Shift 100% traffic to green (keep blue as rollback)
         shell: bash

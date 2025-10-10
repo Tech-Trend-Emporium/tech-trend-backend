@@ -1,23 +1,37 @@
 using System.Text.Json;
+using System.Net.Http;
 using Starter.Models;
+using System.Net;
 
 namespace Starter
 {
     public partial class SeedFromApi
     {
-        public static async Task<List<ProductFromApi>> FetchProductsAsync()
+        public static async Task<List<ProductFromApi>> FetchProductsAsync(CancellationToken ct = default)
         {
-            // 1. Send GET request
-            var httpClient = new HttpClient();
-            var response = await httpClient.GetStringAsync("https://fakestoreapi.com/products");
+            using var http = CreateHttpClient();
 
-            // 2. Deserialize JSON to List<Product>
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            List<ProductFromApi>? products = JsonSerializer.Deserialize<List<ProductFromApi>>(response, options);
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/products?limit=40")
+            {
+                Version = HttpVersion.Version11,
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+            };
 
-            if (products is null) Console.WriteLine("No data retrieved from API.");
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Seed] Error fetching products: {response.StatusCode}");
+                return new();
+            }
             
-            return products;
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            return JsonSerializer.Deserialize<List<ProductFromApi>>(body, options) ?? new();
         }
     }
 }

@@ -80,14 +80,6 @@ jobs:
           echo "DIGEST=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "IMAGE_URI=${REGISTRY_SERVER}/${ACR_REPO}@${DIGEST}" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure ACA in multiple-revisions mode
-        shell: bash
-        run: |
-          az containerapp revision set-mode \
-            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
-            --mode multiple
-        # Multiple active revisions are required for traffic splitting / labels. :contentReference[oaicite:1]{index=1}
-
       - name: Discover current traffic + FQDN
         id: traffic
         shell: bash

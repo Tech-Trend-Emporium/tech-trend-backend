@@ -32,7 +32,7 @@ if (builder.Environment.IsProduction())
 }
 
 // Configure PostgreSQL connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection Missed");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString, npg => npg.EnableRetryOnFailure(5)));
 
 // Configure Serilog
@@ -40,7 +40,8 @@ builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");
-var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["SigningKey"]!));
+var signingKeyValue = jwt["SigningKey"] ?? throw new InvalidOperationException("Jwt:SigningKey Missed");
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKeyValue));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>

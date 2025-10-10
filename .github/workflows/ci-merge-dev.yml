@@ -55,27 +55,8 @@ jobs:
       - name: Build (Release)
         run: dotnet build --no-restore -c Release
 
-      # ---- OPTIONAL & SIMPLE TESTS ----
-      - name: Discover test projects
-        id: testscan
-        shell: bash
-        run: |
-          mapfile -t TESTS < <(git ls-files | \
-            grep -Ei '(^|/)(tests?|test)(/|$)' | grep -E '\.csproj$' || true)
-          if [ ${#TESTS[@]} -eq 0 ]; then
-            mapfile -t TESTS < <(git ls-files | grep -E '\.(Tests|Test)\.csproj$' || true)
-          fi
-          echo "FOUND=${#TESTS[@]}" >> "$GITHUB_OUTPUT"
-          printf "%s\n" "${TESTS[@]}" > tests.txt
-
-      - name: Run tests (if any)
-        if: ${{ steps.testscan.outputs.FOUND != '0' }}
-        shell: bash
-        run: |
-          while IFS= read -r proj; do
-            echo "Testing: $proj"
-            dotnet test "$proj" --no-build -c Release
-          done < tests.txt
+      - name: Tests
+        run: dotnet test --no-build -c Release
 
       - name: Docker metadata (tags + labels)
         id: meta

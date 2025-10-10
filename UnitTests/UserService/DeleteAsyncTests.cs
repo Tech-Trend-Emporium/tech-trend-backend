@@ -1,0 +1,65 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Data.Entities;
+using Microsoft.AspNetCore.Identity;
+using NSubstitute;
+using Application.Services.Implementations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.UserService
+{
+    public class DeleteAsyncTests
+    {
+        private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly Application.Services.Implementations.UserService _service;
+
+        public DeleteAsyncTests()
+        {
+            _userRepository = Substitute.For<IUserRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+            _passwordHasher = Substitute.For<IPasswordHasher<User>>();
+
+            _service = new Application.Services.Implementations.UserService(_userRepository, _unitOfWork, _passwordHasher);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnTrue_WhenUserIsDeleted()
+        {
+            // Arrange
+            int userId = 1;
+            var ct = CancellationToken.None;
+            _userRepository.DeleteByIdAsync(Arg.Any<CancellationToken>(), userId)
+                           .Returns(Task.FromResult(true));
+
+            // Act
+            var result = await _service.DeleteAsync(userId, ct);
+
+            // Assert
+            Assert.True(result);
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenUserNotFound()
+        {
+            // Arrange
+            int userId = 2;
+            var ct = CancellationToken.None;
+            _userRepository.DeleteByIdAsync(ct, userId)
+                           .Returns(Task.FromResult(false));
+
+            // Act
+            var result = await _service.DeleteAsync(userId, ct);
+
+            // Assert
+            Assert.False(result);
+            await _unitOfWork.DidNotReceive().SaveChangesAsync(ct);
+        }
+    }
+}

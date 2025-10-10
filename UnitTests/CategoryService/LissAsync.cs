@@ -1,0 +1,75 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Services.Implementations;
+using Data.Entities;
+using General.Dto.Category;
+using NSubstitute;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+//Code generated with ChatGPT
+namespace UnitTests.CategoryServices
+{    
+
+    public class CategoryService_ListAsync_Tests
+    {
+        private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
+        private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+        private readonly CategoryService _sut; // System Under Test
+
+        public CategoryService_ListAsync_Tests()
+        {
+            _sut = new CategoryService(_categoryRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task ListAsync_ShouldReturnMappedCategoryResponses_WhenCategoriesExist()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var skip = 0;
+            var take = 50;
+
+            var categories = new List<Category>
+        {
+            new() { Id = 1, Name = "Electronics" },
+            new() { Id = 2, Name = "Clothing" }
+        };
+
+            _categoryRepository.ListAsync(skip, take, ct).Returns(categories);
+
+            var expected = categories.Select(c => new CategoryResponse { Id = c.Id, Name = c.Name }).ToList();
+
+            // Act
+            var result = await _sut.ListAsync(skip, take, ct);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expected.Count, result.Count);
+            Assert.Equal(expected[0].Name, result[0].Name);
+            Assert.Equal(expected[1].Name, result[1].Name);
+            await _categoryRepository.Received(1).ListAsync(skip, take);
+        }
+
+        [Fact]
+        public async Task ListAsync_ShouldReturnEmptyList_WhenNoCategoriesExist()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            int skip = 0;
+            int take = 50;
+            _categoryRepository.ListAsync(skip, take, ct).Returns(new List<Category>());
+
+            // Act
+            var result = await _sut.ListAsync(0, 50, ct);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result);
+            await _categoryRepository.Received(1).ListAsync(0, 50);
+        }
+    }
+
+}

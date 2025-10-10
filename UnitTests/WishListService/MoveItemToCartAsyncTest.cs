@@ -1,0 +1,168 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Services.Implementations;
+using Data.Entities;
+using NSubstitute;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.WishListServices
+{
+    public class MoveItemToCartAsyncTests
+    {
+        private readonly IWishListRepository _wishListRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly ICartRepository _cartRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly WishListService _service;
+
+        public MoveItemToCartAsyncTests()
+        {
+            _wishListRepository = Substitute.For<IWishListRepository>();
+            _productRepository = Substitute.For<IProductRepository>();
+            _cartRepository = Substitute.For<ICartRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+
+            _service = new WishListService(
+                _wishListRepository,
+                _productRepository,
+                _cartRepository,
+                _unitOfWork
+            );
+        }
+
+        [Fact]
+        public async Task MoveItemToCartAsync_ShouldMoveItem_WhenExistsInWishList()
+        {
+            // Arrange
+            int userId = 1;
+            int productId = 10;
+            var ct = CancellationToken.None;
+
+            var wishlist = new WishList
+            {
+                Id = 1,
+                UserId = userId,
+                Items = new List<WishListItem> { new() { ProductId = productId } }
+            };
+
+            var cart = new Cart
+            {
+                Id = 2,
+                UserId = userId,
+                Items = new List<CartItem>()
+            };
+
+            _wishListRepository.GetByUserIdAsync(userId, true, ct).Returns(wishlist);
+            _cartRepository.GetByUserIdAsync(userId, true, ct).Returns(cart);
+
+            // Act
+            await _service.MoveItemToCartAsync(userId, productId, ct);
+
+            // Assert
+            Assert.Empty(wishlist.Items); // removed from wishlist
+            Assert.Single(cart.Items);     // added to cart
+            Assert.Equal(productId, cart.Items.First().ProductId);
+
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task MoveItemToCartAsync_ShouldCreateCart_WhenCartDoesNotExist()
+        {
+            // Arrange
+            int userId = 2;
+            int productId = 20;
+            var ct = CancellationToken.None;
+
+            var wishlist = new WishList
+            {
+                Id = 2,
+                UserId = userId,
+                Items = new List<WishListItem> { new() { ProductId = productId } }
+            };
+
+            var createdCart = new Cart
+            {
+                Id = 5,
+                UserId = userId,
+                Items = new List<CartItem>()
+            };
+
+            _wishListRepository.GetByUserIdAsync(userId, true, ct).Returns(wishlist);
+            _cartRepository.GetByUserIdAsync(userId, true, ct).Returns((Cart)null);
+            _cartRepository.CreateForUserAsync(userId, ct).Returns(createdCart);
+
+            // Act
+            await _service.MoveItemToCartAsync(userId, productId, ct);
+
+            // Assert
+            Assert.Empty(wishlist.Items);
+            Assert.Single(createdCart.Items);
+            Assert.Equal(productId, createdCart.Items.First().ProductId);
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task MoveItemToCartAsync_ShouldNotAdd_WhenProductAlreadyInCart()
+        {
+            // Arrange
+            int userId = 3;
+            int productId = 30;
+            var ct = CancellationToken.None;
+
+            var wishlist = new WishList
+            {
+                Id = 3,
+                UserId = userId,
+                Items = new List<WishListItem> { new() { ProductId = productId } }
+            };
+
+            var cart = new Cart
+            {
+                Id = 6,
+                UserId = userId,
+                Items = new List<CartItem> { new() { ProductId = productId, Quantity = 1 } }
+            };
+
+            _wishListRepository.GetByUserIdAsync(userId, true, ct).Returns(wishlist);
+            _cartRepository.GetByUserIdAsync(userId, true, ct).Returns(cart);
+
+            // Act
+            await _service.MoveItemToCartAsync(userId, productId, ct);
+
+            // Assert
+            Assert.Empty(wishlist.Items); // removed from wishlist
+            Assert.Single(cart.Items);     // no duplicate added
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task MoveItemToCartAsync_ShouldReturn_WhenItemNotInWishList()
+        {
+            // Arrange
+            int userId = 4;
+            int productId = 40;
+            var ct = CancellationToken.None;
+
+            var wishlist = new WishList
+            {
+                Id = 4,
+                UserId = userId,
+                Items = new List<WishListItem>() // empty wishlist
+            };
+
+            _wishListRepository.GetByUserIdAsync(userId, true, ct).Returns(wishlist);
+
+            // Act
+            await _service.MoveItemToCartAsync(userId, productId, ct);
+
+            // Assert
+            await _unitOfWork.DidNotReceive().SaveChangesAsync(ct);
+            await _cartRepository.DidNotReceive().GetByUserIdAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        }
+    }
+}

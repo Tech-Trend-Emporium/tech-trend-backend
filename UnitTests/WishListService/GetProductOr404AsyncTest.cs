@@ -1,0 +1,65 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Exceptions;
+using Application.Services.Implementations;
+using Data.Entities;
+using Domain.Validations;
+using NSubstitute;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.WishListServices
+{
+    public class GetProductOr404AsyncTest
+    {
+        private readonly IWishListRepository _wishListRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly ICartRepository _cartRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly WishListService _sut; // System Under Test
+
+        public GetProductOr404AsyncTest()
+        {
+            _wishListRepository = Substitute.For<IWishListRepository>();
+            _productRepository = Substitute.For<IProductRepository>();
+            _cartRepository = Substitute.For<ICartRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+
+            _sut = new WishListService(_wishListRepository, _productRepository, _cartRepository, _unitOfWork);
+        }
+        /*
+        [Fact]
+        public async Task GetProductOr404Async_ShouldReturnProduct_WhenExists()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var productId = 1;
+            var expected = new Product { Id = productId, Title = "Gaming Laptop" };
+
+            _productRepository.GetByIdAsync(ct, productId).Returns(expected);
+
+            // Act
+            var result = await _sut.GetProductOr404Async(productId, ct);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expected.Id, result.Id);
+            await _productRepository.Received(1).GetByIdAsync(ct, productId);
+        }
+
+        [Fact]
+        public async Task GetProductOr404Async_ShouldThrowNotFound_WhenProductDoesNotExist()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var productId = 99;
+            _productRepository.GetByIdAsync(ct, productId).Returns((Product?)null);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetProductOr404Async(productId, ct));
+        }*/
+    }
+}

@@ -1,0 +1,96 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Services.Implementations;
+using Data.Entities;
+using General.Mappers;
+using NSubstitute;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.WishListServices
+{
+    public class GetByAsyncTest
+    {
+        private readonly IWishListRepository _wishListRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly ICartRepository _cartRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly WishListService _sut; // System Under Test
+
+        public GetByAsyncTest()
+        {
+            _wishListRepository = Substitute.For<IWishListRepository>();
+            _productRepository = Substitute.For<IProductRepository>();
+            _cartRepository = Substitute.For<ICartRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+
+            _sut = new WishListService(_wishListRepository, _productRepository, _cartRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task GetAsync_ShouldReturnExistingWishList_WhenExists()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var userId = 5;
+            var existingWishList = new WishList
+            {
+                Id = 10,
+                UserId = userId,
+                Items = new List<WishListItem>
+                {
+                    new WishListItem { Id = 1, ProductId = 100, WishListId = 10 },
+                    new WishListItem { Id = 2, ProductId = 200, WishListId = 10 }
+                }
+            };
+
+            var expectedresponse = WishListMapper.ToResponse(existingWishList);
+
+            _wishListRepository.GetByUserIdAsync(userId, true, ct).Returns(existingWishList);
+
+            // Act
+            var result = await _sut.GetAsync(userId, CancellationToken.None);
+
+            // Assert
+            Assert.Equal(expectedresponse.Id, result.Id);
+            Assert.Equal(expectedresponse.UserId, result.UserId);
+            Assert.Equal(expectedresponse.Items.Count, result.Items.Count);
+            Assert.Equal(expectedresponse.Items[0].ProductId, result.Items[0].ProductId);            
+
+            await _wishListRepository.Received(1).GetByUserIdAsync(userId, true, ct);
+            await _wishListRepository.DidNotReceive().CreateForUserAsync(Arg.Any<int>(), ct);
+        }
+
+        [Fact]
+        public async Task GetAsync_ShouldCreateWishList_WhenNotExists()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var userId = 7;
+            var newWishList = new WishList
+            {
+                Id = 11,
+                UserId = userId
+            };
+
+            var expectedresponse = WishListMapper.ToResponse(newWishList);
+
+            _wishListRepository.GetByUserIdAsync(userId, true, Arg.Any<CancellationToken>()).Returns((WishList?)null);
+
+            _wishListRepository.CreateForUserAsync(userId, Arg.Any<CancellationToken>()).Returns(newWishList);
+
+            // Act
+            var result = await _sut.GetAsync(userId, CancellationToken.None);
+
+            // Assert
+            Assert.Equal(expectedresponse.Id, result.Id);
+            Assert.Equal(expectedresponse.UserId, result.UserId);
+
+            await _wishListRepository.Received(1).GetByUserIdAsync(userId, true, Arg.Any<CancellationToken>());
+            await _wishListRepository.Received(1).CreateForUserAsync(userId, Arg.Any<CancellationToken>());
+        }
+    }
+}

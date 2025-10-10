@@ -56,7 +56,8 @@ namespace Infrastructure.Persistence.Migrations.App
                     Role = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -73,8 +74,8 @@ namespace Infrastructure.Persistence.Migrations.App
                     Price = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Description = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     ImageUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
-                    RatingRate = table.Column<double>(type: "double precision", nullable: true),
-                    Count = table.Column<int>(type: "integer", nullable: true),
+                    RatingRate = table.Column<double>(type: "double precision", nullable: false),
+                    Count = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CategoryId = table.Column<int>(type: "integer", nullable: false)
@@ -99,6 +100,9 @@ namespace Infrastructure.Persistence.Migrations.App
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Operation = table.Column<int>(type: "integer", nullable: false),
                     State = table.Column<bool>(type: "boolean", nullable: false),
+                    TargetId = table.Column<int>(type: "integer", nullable: true),
+                    PayloadJson = table.Column<string>(type: "character varying(8000)", maxLength: 8000, nullable: true),
+                    Reason = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
                     RequestedBy = table.Column<int>(type: "integer", nullable: false),
                     DecidedBy = table.Column<int>(type: "integer", nullable: true),
                     RequestedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -267,6 +271,36 @@ namespace Infrastructure.Persistence.Migrations.App
                 });
 
             migrationBuilder.CreateTable(
+                name: "refresh_tokens",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Token = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    ExpiresAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    RevokedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ReplacedByToken = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    SessionId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_refresh_tokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_refresh_tokens_sessions_SessionId",
+                        column: x => x.SessionId,
+                        principalTable: "sessions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_refresh_tokens_users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "wish_list_items",
                 columns: table => new
                 {
@@ -359,6 +393,22 @@ namespace Infrastructure.Persistence.Migrations.App
                 column: "Title");
 
             migrationBuilder.CreateIndex(
+                name: "IX_refresh_tokens_SessionId",
+                table: "refresh_tokens",
+                column: "SessionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_refresh_tokens_Token",
+                table: "refresh_tokens",
+                column: "Token",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_refresh_tokens_UserId",
+                table: "refresh_tokens",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_reviews_ProductId",
                 table: "reviews",
                 column: "ProductId");
@@ -417,16 +467,19 @@ namespace Infrastructure.Persistence.Migrations.App
                 name: "inventories");
 
             migrationBuilder.DropTable(
-                name: "reviews");
+                name: "refresh_tokens");
 
             migrationBuilder.DropTable(
-                name: "sessions");
+                name: "reviews");
 
             migrationBuilder.DropTable(
                 name: "wish_list_items");
 
             migrationBuilder.DropTable(
                 name: "carts");
+
+            migrationBuilder.DropTable(
+                name: "sessions");
 
             migrationBuilder.DropTable(
                 name: "products");

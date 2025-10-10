@@ -39,6 +39,14 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("Operation")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PayloadJson")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
                     b.Property<DateTime>("RequestedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -47,6 +55,9 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.Property<bool>("State")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("TargetId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -213,7 +224,7 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Count")
+                    b.Property<int>("Count")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -231,7 +242,7 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<double?>("RatingRate")
+                    b.Property<double>("RatingRate")
                         .HasColumnType("double precision");
 
                     b.Property<string>("Title")

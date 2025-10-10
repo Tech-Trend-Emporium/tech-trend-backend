@@ -23,7 +23,15 @@ namespace Data.Entities
         public Operation Operation { get; set; } 
 
         [Required]
-        public bool State { get; set; } = false; 
+        public bool State { get; set; } = false;
+
+        public int? TargetId { get; set; }
+
+        [MaxLength(8000)]
+        public string? PayloadJson { get; set; }
+
+        [MaxLength(512)]
+        public string? Reason { get; set; }
 
         [Required]
         public int RequestedBy { get; set; }

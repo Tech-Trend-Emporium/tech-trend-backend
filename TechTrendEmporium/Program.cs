@@ -1,3 +1,4 @@
+using API.Filters;
 using API.Middlewares;
 using Application.Abstraction;
 using Application.Abstractions;
@@ -5,46 +6,42 @@ using Application.Repository;
 using Application.Services;
 using Application.Services.Implementations;
 using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
 using Azure.Identity;
 using Data.Entities;
 using Infrastructure.DbContexts;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
 using Starter;
 using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsProduction())
+{
+    // Load secrets from Azure Key Vault in production
+    var kvUrl = Environment.GetEnvironmentVariable("KEYVAULT_URL") ?? "https://ttekv.vault.azure.net/";
+    builder.Configuration.AddAzureKeyVault(new Uri(kvUrl), new DefaultAzureCredential());
+}
+
 // Configure PostgreSQL connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection Missed");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString, npg => npg.EnableRetryOnFailure(5)));
 
-// Seed from external API
-var products = await SeedFromApi.FetchProductsAsync();
-SeedFromApi.AddCategoriesIfNotExistAsync(products, new AppDbContext(
-    new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(connectionString)
-        .Options)).Wait();
-SeedFromApi.AddProductsIfNotExistAsync(products, new AppDbContext(
-    new DbContextOptionsBuilder<AppDbContext>()
-        .UseNpgsql(connectionString)
-        .Options)).Wait();
-
-// Azure Key Vault
-var keyVaultUrl = builder.Configuration["KeyVault:Url"] ?? "https://kv-prod.vault.azure.net/";
-builder.Configuration.AddAzureKeyVault(
-    new Uri(keyVaultUrl),
-    new DefaultAzureCredential());
+// Configure Serilog
+builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
 // Configure JWT authentication
 var jwt = builder.Configuration.GetSection("Jwt");
-var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["SigningKey"]!));
+var signingKeyValue = jwt["SigningKey"] ?? throw new InvalidOperationException("Jwt:SigningKey Missed");
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKeyValue));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -87,9 +84,7 @@ builder.Services.AddAuthorization(opt =>
 });
 
 // Add health checks
-builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy())
-    .AddDbContextCheck<AppDbContext>(name: "db");
+builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy()).AddDbContextCheck<AppDbContext>(name: "db");
 
 // Add repositories
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -138,25 +133,64 @@ apiVersioningBuilder.AddApiExplorer(o =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    c.OperationFilter<AuthorizeCheckOperationFilter>();
+});
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+
+    await ctx.Database.MigrateAsync();
+
+    var products = await SeedFromApi.FetchProductsAsync();
+    await SeedFromApi.AddCategoriesIfNotExistAsync(products, ctx);
+    await SeedFromApi.AddProductsIfNotExistAsync(products, ctx);
+
+    var users = await SeedFromApi.FetchUsersAsync();
+    await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
+}
+
+/*
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+*/
+
+app.UseSwagger();
+app.UseSwaggerUI(); // Remove and uncomment above in production if needed
+
+
+// Enforce HTTPS in production
+var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);
+if (useHttps) { app.UseHsts(); app.UseHttpsRedirection(); }
+
+app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = r => r.Name == "self"
-});
-app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = r => r.Name == "self" });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = _ => true,
     ResultStatusCodes =

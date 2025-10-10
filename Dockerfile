@@ -21,9 +21,6 @@ COPY Domain/ Domain/
 COPY Infrastructure/ Infrastructure/
 COPY Starter/ Starter/
 
-# Diagnostic (optional)
-RUN echo "Tree /src (level 2):" && find . -maxdepth 2 -type f -name "*.csproj" -print
-
 # Restore dependencies for the entire solution (more robust)
 RUN dotnet restore "TechTrendEmporium.sln"
 

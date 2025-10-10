@@ -47,8 +47,8 @@ namespace UnitTests.InventoryServices
 
             var expectedResponses = new List<InventoryResponse>
             {
-                new() { Id = 1, Product = "Keyboard", Total = 1000, Available = 800 },
-                new() { Id = 2, Product = "Mouse", Total = 150, Available = 100 }
+                new() { Id = 1, ProductName = "Keyboard", Total = 1000, Available = 800 },
+                new() { Id = 2, ProductName = "Mouse", Total = 150, Available = 100 }
             };
 
             _inventoryRepository.ListAsync(skip, take, ct).Returns(inventories);
@@ -62,7 +62,7 @@ namespace UnitTests.InventoryServices
             Assert.Equal(expectedResponses.Count, result.Count);
             
             Assert.Equal(expectedResponses[0].Id, result[0].Id);
-            Assert.Equal(expectedResponses[0].Product, result[0].Product);
+            Assert.Equal(expectedResponses[0].ProductName, result[0].ProductName);
             Assert.Equal(expectedResponses[0].Total, result[0].Total);
             Assert.Equal(expectedResponses[0].Available, result[0].Available);
 

@@ -56,7 +56,7 @@ namespace UnitTests.InventoryServices
             // Assert
             Assert.Equal(inventories.Count, total);
             Assert.Equal(inventories.Count, items.Count);
-            Assert.True(products[0].Title == items[0].Product);
+            Assert.True(products[0].Title == items[0].ProductName);
             Assert.True(inventories[0].Available == items[0].Available);
         }
 
@@ -110,9 +110,9 @@ namespace UnitTests.InventoryServices
             // Assert
             Assert.Equal(inventories.Count, total);
             Assert.Equal(inventories.Count, items.Count);
-            Assert.True(products[0].Title == items[0].Product);
+            Assert.True(products[0].Title == items[0].ProductName);
             Assert.True(inventories[0].Available == items[0].Available);
-            Assert.True(items[1].Product == "Unknown");
+            Assert.True(items[1].ProductName == "Unknown");
         }
     }
 

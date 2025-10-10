@@ -161,28 +161,18 @@ using (var scope = app.Services.CreateScope())
 
     var products = await SeedFromApi.FetchProductsAsync();
     await SeedFromApi.AddCategoriesIfNotExistAsync(products, ctx);
-
-    await Task.Delay(TimeSpan.FromSeconds(1)); // Small delay to avoid 403 error from external API
+    await Task.Delay(TimeSpan.FromSeconds(1));
 
     await SeedFromApi.AddProductsIfNotExistAsync(products, ctx);
-
     await Task.Delay(TimeSpan.FromSeconds(1));
 
     var users = await SeedFromApi.FetchUsersAsync(); 
     await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
 }
 
-/*
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-*/
-
+// Enable Swagger
 app.UseSwagger();
-app.UseSwaggerUI(); // Remove and uncomment above in production if needed
-
+app.UseSwaggerUI();
 
 // Enforce HTTPS in production
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);

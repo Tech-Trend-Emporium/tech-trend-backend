@@ -159,6 +159,7 @@ using (var scope = app.Services.CreateScope())
 
     await ctx.Database.MigrateAsync();
 
+    /*
     var products = await SeedFromApi.FetchProductsAsync();
     await SeedFromApi.AddCategoriesIfNotExistAsync(products, ctx);
 
@@ -167,8 +168,9 @@ using (var scope = app.Services.CreateScope())
     await SeedFromApi.AddProductsIfNotExistAsync(products, ctx);
 
     await Task.Delay(TimeSpan.FromSeconds(1));
+    */
 
-    var users = await SeedFromApi.FetchUsersAsync();
+    var users = await SeedFromApi.FetchUsersAsync(); //try only fetching users from external API to avoid 403. Uncomment above afterwards if needed
     await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
 }
 

@@ -11,7 +11,7 @@ namespace Starter
         {
             using var http = CreateHttpClient();
 
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/products?limit=40")
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/products")
             {
                 Version = HttpVersion.Version11,
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower

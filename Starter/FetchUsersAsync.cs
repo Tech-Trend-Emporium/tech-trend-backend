@@ -10,7 +10,7 @@ namespace Starter
         public static async Task<List<UserFromAPI>> FetchUsersAsync(CancellationToken ct = default)
         {
             using var http = CreateHttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/users?limit=20")
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/users?limit")
             {
                 Version = System.Net.HttpVersion.Version11,
                 VersionPolicy = HttpVersionPolicy.RequestVersionOrLower

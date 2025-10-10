@@ -5,18 +5,18 @@ This file contains **internal environment details** and **test data** for develo
 
 ## 👥 Test Users (Seeded)
 
-| ID | Email              | Username   | First Name | Last Name | Password    |
-|----|--------------------|-------------|-------------|------------|-------------|
-| 1  | john@gmail.com     | johnd       | john        | doe        | m38rmF$     |
-| 2  | morrison@gmail.com | mor_2314    | david       | morrison   | 83r5^_      |
-| 3  | kevin@gmail.com    | kevinryan   | kevin       | ryan       | kev02937@   |
-| 4  | don@gmail.com      | donero      | don         | romer      | ewedon      |
-| 5  | derek@gmail.com    | derek       | derek       | powell     | jklg*_56    |
-| 6  | david_r@gmail.com  | david_r     | david       | russell    | 3478*#54    |
-| 7  | miriam@gmail.com   | snyder      | miriam      | snyder     | f238&@*$    |
-| 8  | william@gmail.com  | hopkins     | william     | hopkins    | William56$hj|
-| 9  | kate@gmail.com     | kate_h      | kate        | hale       | kfejk@*_    |
-| 10 | jimmie@gmail.com   | jimmie_k    | jimmie      | klein      | klein*#%*   |
+| ID | Email              | Username    | First Name  | Last Name  | Password     | Role     |
+|----|--------------------|-------------|-------------|------------|--------------|----------|
+| 1  | john@gmail.com     | johnd       | john        | doe        | m38rmF$      | ADMIN    |
+| 2  | morrison@gmail.com | mor_2314    | david       | morrison   | 83r5^_       | EMPLOYEE |
+| 3  | kevin@gmail.com    | kevinryan   | kevin       | ryan       | kev02937@    | SHOPPER  |
+| 4  | don@gmail.com      | donero      | don         | romer      | ewedon       | SHOPPER  |
+| 5  | derek@gmail.com    | derek       | derek       | powell     | jklg*_56     | SHOPPER  |
+| 6  | david_r@gmail.com  | david_r     | david       | russell    | 3478*#54     | SHOPPER  |
+| 7  | miriam@gmail.com   | snyder      | miriam      | snyder     | f238&@*$     | SHOPPER  |
+| 8  | william@gmail.com  | hopkins     | william     | hopkins    | William56$hj | SHOPPER  |
+| 9  | kate@gmail.com     | kate_h      | kate        | hale       | kfejk@*_     | SHOPPER  |
+| 10 | jimmie@gmail.com   | jimmie_k    | jimmie      | klein      | klein*#%*    | SHOPPER  |
 
 > ⚠️ These users are seeded **for testing only** and do not exist in production environments.
 

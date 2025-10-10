@@ -99,7 +99,7 @@ jobs:
         id: newrev
         shell: bash
         run: |
-          REV_SUFFIX="${{ steps.vars.outputs.DATE_TAG }}-${{ steps.vars.outputs.SHORT_SHA }}"
+          REV_SUFFIX="$(date -u +'%Y%m%d-%H%M')-${{ steps.vars.outputs.SHORT_SHA }}"
           az containerapp update \
             -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
             --image "${{ steps.digest.outputs.IMAGE_URI }}" \

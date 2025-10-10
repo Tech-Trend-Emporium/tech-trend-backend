@@ -20,6 +20,7 @@ COPY Application/ Application/
 COPY Domain/ Domain/
 COPY Infrastructure/ Infrastructure/
 COPY Starter/ Starter/
+COPY UnitTests/ UnitTests/
 
 # Restore dependencies for the entire solution (more robust)
 RUN dotnet restore "TechTrendEmporium.sln"

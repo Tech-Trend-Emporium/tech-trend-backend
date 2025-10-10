@@ -53,13 +53,28 @@ namespace UnitTests.ReviewService
 
             var user = new User { Id = 1, Username = dto.Username };
             var reviewEntity = ReviewMapper.ToEntity(dto, user.Id);
-            reviewEntity.Id = reviewId;
-            var expectedReview = ReviewMapper.ToResponse(reviewEntity,user.Username);
+            // Do NOT set reviewEntity.Id here, let the Add mock do it
 
-            _userRepository.GetAsync(Arg.Any<System.Linq.Expressions.Expression<Func<User, bool>>>(), ct : ct).Returns(user);
+            var expectedReview = ReviewMapper.ToResponse(
+                new Review
+                {
+                    Id = reviewId,
+                    UserId = user.Id,
+                    ProductId = dto.ProductId,
+                    Comment = dto.Comment,
+                    Rating = dto.Rating
+                },
+                user.Username
+            );
+
+            _userRepository.GetAsync(Arg.Any<System.Linq.Expressions.Expression<Func<User, bool>>>(), ct: ct).Returns(user);
             _productRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Product, bool>>>(), ct).Returns(true);
-            _reviewRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Review, bool>>>(), ct).Returns(false);           
+            _reviewRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Review, bool>>>(), ct).Returns(false);
 
+            // Mock Add to set the Id as would happen in a real DB context
+            _reviewRepository
+                .When(x => x.Add(Arg.Any<Review>()))
+                .Do(callInfo => callInfo.Arg<Review>().Id = reviewId);
 
             // Act
             var result = await _sut.CreateAsync(dto, ct);
@@ -68,7 +83,7 @@ namespace UnitTests.ReviewService
             Assert.NotNull(result);
             Assert.Equal(expectedReview.Id, result.Id);
             Assert.Equal(expectedReview.Username, result.Username);
-            Assert.Equal(expectedReview.Comment, result.Comment);                        
+            Assert.Equal(expectedReview.Comment, result.Comment);
         }
 
         [Fact]

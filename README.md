@@ -41,11 +41,11 @@ The solution is structured into **four layers**:
 - **PostgreSQL** (via Docker Compose for local)  
 - **Azure SQL Database** (production)  
 - **Docker & Docker Compose**  
-- **Entity Framework Core** (migrations managed centrally)  
+- **Entity Framework Core**  
 - **Swagger / OpenAPI** for API documentation  
-- **Serilog** + **OpenTelemetry** (exporters to Application Insights)  
-- **GitHub Actions** for CI/CD  
-- **Azure** services: **ACR**, **ACI**, **AKV**
+- **Serilog** + **OpenTelemetry**  
+- **GitHub Actions** (CI/CD)  
+- **Azure Services:** ACR, ACI, AKV
 
 
 ## 📂 Repository Structure
@@ -55,7 +55,7 @@ The solution is structured into **four layers**:
 /docs/                  # Documentation (ADR, diagrams)
 Application/            # Application layer (use cases, services, interfaces, DTOs)
 Domain/                 # Domain layer (entities, enums, aggregates, core logic)
-Infrastructure/          # Infrastructure layer (EF Core, repositories, integrations)
+Infrastructure/         # Infrastructure layer (EF Core, repositories, integrations)
 Starter/                # Seed from external API
 TechTrendEmporium/      # Presentation layer (Web API, controllers, middlewares)
 /tests/                 # Unit, Integration, E2E tests
@@ -155,10 +155,9 @@ Environments: `dev`, `prod` with approvals and protection rules.
 
 ## 📖 Documentation
 
-- Wiki: Branching strategy, PR guidelines, architectural decisions.
-- ADR: Stored under `/docs/`.
-- API Docs: Each service exposes `/swagger`.
-
+- `/docs/` → ADRs, diagrams.
+- `/swagger` → API Docs.
+- `MAFEFILE.md` → Test users, endpoints, and detailed setup.
 
 
 ## 🤝 Contributing
@@ -176,7 +175,6 @@ We follow a Trunk-Based Development strategy:
 - Improve CI/CD with GitHub Actions + ACR + ACI.
 - Observability with OpenTelemetry → Application Insights.
 - Add automated integration tests with Azure SQL.
-
 
 
 ## 📜 License

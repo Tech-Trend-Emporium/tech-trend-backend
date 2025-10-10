@@ -167,11 +167,17 @@ using (var scope = app.Services.CreateScope())
     await SeedFromApi.AddUsersIfNotExistAsync(users, ctx, hasher);
 }
 
+/*
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+*/
+
+app.UseSwagger();
+app.UseSwaggerUI(); // Remove and uncomment above in production if needed
+
 
 // Enforce HTTPS in production
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);

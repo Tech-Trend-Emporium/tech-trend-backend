@@ -1,4 +1,5 @@
 ﻿using Starter.Models;
+using System.Net.Http;
 using System.Text.Json;
 
 
@@ -6,17 +7,24 @@ namespace Starter
 {
     public partial class SeedFromApi
     {
-        public static async Task<List<UserFromAPI>> FetchUsersAsync()
+        public static async Task<List<UserFromAPI>> FetchUsersAsync(CancellationToken ct = default)
         {
-            var httpClient = new HttpClient();
-            var response = await httpClient.GetStringAsync("https://fakestoreapi.com/users");
+            using var http = CreateHttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/users")
+            {
+                Version = System.Net.HttpVersion.Version11,
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
+            };
+            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
 
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Seed] Error fetching users: {response.StatusCode}");
+                return new();
+            }
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            List<UserFromAPI>? users = JsonSerializer.Deserialize<List<UserFromAPI>>(response, options);
-
-            if (users is null) Console.WriteLine("No data retrieved from API.");
-
-            return users;
+            return JsonSerializer.Deserialize<List<UserFromAPI>>(body, options) ?? new();
         }
     }
 }

@@ -1,0 +1,60 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Services.Implementations;
+using NSubstitute;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.CouponServices
+{
+    public class DeleteAsyncTests
+    {
+        private readonly ICouponRepository _couponRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly CouponService _service;
+
+        public DeleteAsyncTests()
+        {
+            _couponRepository = Substitute.For<ICouponRepository>();
+            _unitOfWork = Substitute.For<IUnitOfWork>();
+            _service = new CouponService(_couponRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenCouponDoesNotExist()
+        {
+            // Arrange
+            int couponId = 5;
+            var ct = CancellationToken.None;
+
+            _couponRepository.DeleteByIdAsync(ct, couponId).Returns(false);
+
+            // Act
+            var result = await _service.DeleteAsync(couponId, ct);
+
+            // Assert
+            Assert.False(result);
+            await _unitOfWork.DidNotReceive().SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnTrue_WhenCouponDeletedSuccessfully()
+        {
+            // Arrange
+            int couponId = 7;
+            var ct = CancellationToken.None;
+
+            _couponRepository.DeleteByIdAsync(ct, couponId).Returns(true);
+
+            // Act
+            var result = await _service.DeleteAsync(couponId, ct);
+
+            // Assert
+            Assert.True(result);
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+    }
+}

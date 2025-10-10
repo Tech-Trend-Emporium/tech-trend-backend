@@ -1,0 +1,102 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Exceptions;
+using Application.Services.Implementations;
+using Data.Entities;
+using General.Dto.Category;
+using NSubstitute;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace UnitTests.CategoryServices
+{    
+
+    public class CategoryService_UpdateAsync_Tests
+    {
+        private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
+        private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+        private readonly CategoryService _sut; // System Under Test
+
+        public CategoryService_UpdateAsync_Tests()
+        {
+            _sut = new CategoryService(_categoryRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldUpdateCategory_WhenValidData()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 1;
+            var dto = new UpdateCategoryRequest { Name = "Updated Category" };
+            var entity = new Category { Id = id, Name = "Old Category" };
+
+            _categoryRepository.GetByIdAsync(ct, id).Returns(entity);
+            _categoryRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Category, bool>>>(), ct).Returns(false);
+
+            // Act
+            var result = await _sut.UpdateAsync(id, dto, ct);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Updated Category", result.Name);
+            Assert.Equal(id, result.Id);
+            _categoryRepository.Received(1).Update(entity);
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldThrowNotFoundException_WhenCategoryDoesNotExist()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 99;
+            var dto = new UpdateCategoryRequest { Name = "New Category" };
+
+            _categoryRepository.GetByIdAsync(ct, id).Returns((Category?)null);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateAsync(id, dto, ct));            
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldThrowConflictException_WhenNameIsTaken()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 1;
+            var dto = new UpdateCategoryRequest { Name = "Duplicate" };
+            var entity = new Category { Id = id + 1, Name = "Duplicate" };
+
+            _categoryRepository.GetByIdAsync(ct, id).Returns(entity);
+            _categoryRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Category, bool>>>(), ct).Returns(true);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ConflictException>(() => _sut.UpdateAsync(id, dto, ct));
+            
+        }
+
+        [Fact]
+        public async Task UpdateAsync_ShouldCallSaveChangesOnce_WhenUpdateIsSuccessful()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 5;
+            var dto = new UpdateCategoryRequest { Name = "Final Name" };
+            var entity = new Category { Id = id, Name = "Before Update" };
+
+            _categoryRepository.GetByIdAsync(ct, id).Returns(entity);
+            _categoryRepository.ExistsAsync(Arg.Any<System.Linq.Expressions.Expression<Func<Category, bool>>>(), ct).Returns(false);
+
+            // Act
+            await _sut.UpdateAsync(id, dto, ct);
+
+            // Assert
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+            _categoryRepository.Received(1).Update(Arg.Is<Category>(c => c.Name == "Final Name"));
+        }
+    }
+
+}

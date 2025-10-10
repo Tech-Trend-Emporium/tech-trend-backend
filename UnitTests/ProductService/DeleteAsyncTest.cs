@@ -1,0 +1,65 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace UnitTests.ProductServices
+{
+    using Application.Abstraction;
+    using Application.Abstractions;
+    using Application.Services.Implementations;
+    using NSubstitute;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Xunit;
+
+    public class DeleteAsyncTests
+    {
+        private readonly IProductRepository _productRepository = Substitute.For<IProductRepository>();
+        private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
+        private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+        private readonly ProductService _sut;
+
+        public DeleteAsyncTests()
+        {
+            _sut = new ProductService(_productRepository, _categoryRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnTrue_WhenProductIsDeleted()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 1;
+
+            _productRepository.DeleteByIdAsync(ct, id).Returns(true);
+
+            // Act
+            var result = await _sut.DeleteAsync(id, ct);
+
+            // Assert
+            Assert.True(result);
+            await _unitOfWork.Received(1).SaveChangesAsync(ct);
+            await _productRepository.Received(1).DeleteByIdAsync(ct, id);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnFalse_WhenProductNotDeleted()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var id = 999;
+
+            _productRepository.DeleteByIdAsync(ct, id).Returns(false);
+
+            // Act
+            var result = await _sut.DeleteAsync(id, ct);
+
+            // Assert
+            Assert.False(result);
+            await _unitOfWork.DidNotReceive().SaveChangesAsync(ct);
+        }
+    }
+
+}

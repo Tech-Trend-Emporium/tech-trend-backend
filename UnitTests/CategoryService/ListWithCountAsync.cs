@@ -1,0 +1,91 @@
+﻿using Application.Abstraction;
+using Application.Abstractions;
+using Application.Services.Implementations;
+using Data.Entities;
+using General.Dto.Category;
+using NSubstitute;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+//Code generated with ChatGPT
+namespace UnitTests.CategoryServices
+{
+    
+
+    public class ListWithCountAsyncTest
+    {
+        private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
+        private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+        private readonly CategoryService _sut;
+
+        public ListWithCountAsyncTest()
+        {
+            _sut = new CategoryService(_categoryRepository, _unitOfWork);
+        }
+
+        [Fact]
+        public async Task ListWithCountAsync_ShouldReturnCategoriesAndTotal_WhenDataExists()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var skip = 0;
+            var take = 50;
+
+            var categories = new List<Category>
+        {
+            new() { Id = 1, Name = "Electronics" },
+            new() { Id = 2, Name = "Clothing" }
+        };
+
+            var totalCount = categories.Count;
+
+            _categoryRepository.ListAsync(skip, take, ct).Returns(categories);
+            _categoryRepository.CountAsync(null, ct).Returns(totalCount);
+
+            var expectedItems = categories.Select(c => new CategoryResponse
+            {
+                Id = c.Id,
+                Name = c.Name
+            }).ToList();
+
+            // Act
+            var (items, total) = await _sut.ListWithCountAsync(skip, take, ct);
+
+            // Assert
+            Assert.NotNull(items);
+            Assert.Equal(expectedItems.Count, items.Count);
+            Assert.Equal(expectedItems[0].Name, items[0].Name);
+            Assert.Equal(expectedItems[1].Name, items[1].Name);
+            Assert.Equal(totalCount, total);
+
+            await _categoryRepository.Received(1).ListAsync(skip, take);
+            await _categoryRepository.Received(1).CountAsync(null, ct);
+        }
+
+        [Fact]
+        public async Task ListWithCountAsync_ShouldReturnEmptyListAndZero_WhenNoDataExists()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            int skip = 0;
+            int take = 50;
+            _categoryRepository.ListAsync(skip, take, ct).Returns(new List<Category>());
+            _categoryRepository.CountAsync(null, ct).Returns(0);
+
+            // Act
+            var (items, total) = await _sut.ListWithCountAsync(skip, take, ct);
+
+            // Assert
+            Assert.NotNull(items);
+            Assert.Empty(items);
+            Assert.Equal(0, total);
+            await _categoryRepository.Received(1).ListAsync(0, 50);
+            await _categoryRepository.Received(1).CountAsync(null, ct);
+        }
+
+    }
+
+}

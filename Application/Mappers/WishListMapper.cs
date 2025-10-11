@@ -1,11 +1,6 @@
 ﻿using Application.Dtos.WishList;
 using Data.Entities;
 using General.Dto.WishList;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace General.Mappers
 {

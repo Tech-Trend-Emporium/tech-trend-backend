@@ -1,13 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.ConstrainedExecution;
 
 namespace Domain.Constants
 {
     public static class ApprovalJobValidator
     {
+        // Service validation messages
+        public static string ApprovalJobNotFoundMessage(int id) => $"The approval job with id '{id} not found.'";
+        public const string TargetIdRequiredMessage = "The field TargetId is required.";
+        public const string PayloadRequiredMessage = "The field Payload is required for CREATE.";
+        public const string PayloadInvalidCategoryMessage = "The field Payload is invalid for CATEGORY/CREATE.";
+        public const string PayloadInvalidProductMessage = "The field Payload is invalid for PRODUCT/CREATE.";
+        public const string ApprovalJobAlreadyDecidedMessage = "This approval job has already been decided.";
+        public const string ApprovalJobTypeNotSupportedMessage = "The field ApprovalJobType not supported.";
+        public const string PayloadEmptyCategoryMessage = "The field Payload is required for CATEGORY/CREATE.";
+        public const string PayloadEmptyProductMessage = "The field Payload is required for PRODUCT/CREATE.";
+        public const string TargetIdCategoryRequiredMessage = "The field TargetId is required for CATEGORY/DELETE.";
+        public const string TargetIdProductRequiredMessage = "The field TargetId is required for PRODUCT/DELETE.";
+
         // Entity validation messages
         public const string DecidedAtRequiresDecidedByErrorMessage = "The field DecidedAt requires DecidedBy field.";
         public const string DecidedAtCannotBeBeforeRequestedAtErrorMessage = "The field DecidedAt cannot be before RequestedAt field.";

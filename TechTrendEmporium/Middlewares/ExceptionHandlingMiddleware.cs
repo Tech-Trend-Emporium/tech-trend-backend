@@ -30,6 +30,7 @@ namespace API.Middlewares
             var traceId = ctx.TraceIdentifier;
             var (status, title, type, extensions) = ex switch
             {
+                PendingApprovalException pex => (StatusCodes.Status202Accepted, "Pending Approval", "https://httpstatuses.io/202", new { message = pex.Message, approvalJob = pex.Payload }),
                 NotFoundException => (StatusCodes.Status404NotFound, "Not Found", "https://httpstatuses.io/404", (object?)null),
                 ConflictException => (StatusCodes.Status409Conflict, "Conflict", "https://httpstatuses.io/409", (object?)null),
                 ValidationException vex => (StatusCodes.Status400BadRequest, "Validation Error", "https://httpstatuses.io/400", new { errors = vex.Errors }),

@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  api:
+    container_name: techtrend-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_PATH: TechTrendEmporium/API.csproj   
+        PROJECT_DLL: API.dll                         
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=techtrend_db;Username=techtrend_user;Password=TechTrendPass123;Ssl Mode=Disable;Trust Server Certificate=true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5000:8080"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: techtrend-postgres
+    environment:
+      POSTGRES_DB: techtrend_db
+      POSTGRES_USER: techtrend_user
+      POSTGRES_PASSWORD: TechTrendPass123
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U techtrend_user -d techtrend_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

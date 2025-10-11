@@ -1,6 +1,8 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
 using Application.Exceptions;
+using Domain.Enums;
+using Domain.Validations;
 using General.Dto.Category;
 using General.Mappers;
 using System;
@@ -31,7 +33,7 @@ namespace Application.Services.Implementations
         {
             var normalized = dto.Name.Trim().ToUpperInvariant();
             var exists = await _categoryRepository.ExistsAsync(c => c.Name.ToUpper() == normalized, ct);
-            if (exists) throw new ConflictException($"Category with name '{dto.Name}' already exists.");
+            if (exists) throw new ConflictException(CategoryValidator.CategoryNameExists(dto.Name));
 
             var entity = CategoryMapper.ToEntity(dto);
 
@@ -74,13 +76,10 @@ namespace Application.Services.Implementations
 
         public async Task<(IReadOnlyList<CategoryResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
-            var listTask = _categoryRepository.ListAsync(skip, take, ct);
-            var countTask = _categoryRepository.CountAsync(null, ct);
+            var listTask = await _categoryRepository.ListAsync(skip, take, ct);
+            var total = await _categoryRepository.CountAsync(null, ct);
 
-            await Task.WhenAll(listTask, countTask);
-
-            var items = CategoryMapper.ToResponseList(listTask.Result);
-            var total = countTask.Result;
+            var items = CategoryMapper.ToResponseList(listTask);
 
             return (items, total);
         }
@@ -88,11 +87,11 @@ namespace Application.Services.Implementations
         public async Task<CategoryResponse> UpdateAsync(int id, UpdateCategoryRequest dto, CancellationToken ct = default)
         {
             var entity = await _categoryRepository.GetByIdAsync(ct, id);
-            if (entity is null) throw new NotFoundException($"The category with ID '{id}' was not found.");
+            if (entity is null) throw new NotFoundException(CategoryValidator.CategoryNotFound(id));
 
             var normalized = dto.Name.Trim().ToUpperInvariant();
             var nameTaken = await _categoryRepository.ExistsAsync(c => c.Id != id && c.Name.ToUpper() == normalized, ct);
-            if (nameTaken) throw new ConflictException($"Category with name '{dto.Name}' already exists.");
+            if (nameTaken) throw new ConflictException(CategoryValidator.CategoryNameExists(dto.Name));
 
             CategoryMapper.ApplyUpdate(entity, dto);
 

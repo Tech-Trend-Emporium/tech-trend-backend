@@ -1,0 +1,55 @@
+﻿name: ci-pr-dev
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-dev-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  TAG_PREFIX: dev
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "PRO_TAG=${{ env.TAG_PREFIX }}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --no-restore -c Release
+
+      - name: Tests
+        run: dotnet test --no-build -c Release
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### PR validation for \`${{ steps.vars.outputs.BRANCH_NAME }}\`";
+            echo "- Commit: \`${{ steps.vars.outputs.SHORT_SHA }}\`";
+            echo "- Proposed tag on merge: \`${{ steps.vars.outputs.PRO_TAG }}\`";
+          } >> "$GITHUB_STEP_SUMMARY"

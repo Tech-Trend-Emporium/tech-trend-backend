@@ -1,4 +1,5 @@
-﻿using Domain.Enums;
+﻿using Domain.Constants;
+using Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -22,7 +23,15 @@ namespace Data.Entities
         public Operation Operation { get; set; } 
 
         [Required]
-        public bool State { get; set; } = false; 
+        public bool State { get; set; } = false;
+
+        public int? TargetId { get; set; }
+
+        [MaxLength(8000)]
+        public string? PayloadJson { get; set; }
+
+        [MaxLength(512)]
+        public string? Reason { get; set; }
 
         [Required]
         public int RequestedBy { get; set; }
@@ -38,14 +47,9 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (DecidedAt.HasValue && !DecidedBy.HasValue)
-                yield return new ValidationResult("The field DecidedAt requires DecidedBy.", new[] { nameof(DecidedAt), nameof(DecidedBy) });
-
-            if (DecidedAt.HasValue && DecidedAt < RequestedAt)
-                yield return new ValidationResult("The field DecidedAt cannot be before RequestedAt field.", new[] { nameof(DecidedAt), nameof(RequestedAt) });
-
-            if (DecidedBy.HasValue && DecidedBy == RequestedBy)
-                yield return new ValidationResult("The field DecidedBy cannot be the same as RequestedBy field.", new[] { nameof(DecidedBy), nameof(RequestedBy) });
+            if (DecidedAt.HasValue && !DecidedBy.HasValue) yield return new ValidationResult(ApprovalJobValidator.DecidedAtRequiresDecidedByErrorMessage, new[] { nameof(DecidedAt), nameof(DecidedBy) });
+            if (DecidedAt.HasValue && DecidedAt < RequestedAt) yield return new ValidationResult(ApprovalJobValidator.DecidedAtCannotBeBeforeRequestedAtErrorMessage, new[] { nameof(DecidedAt), nameof(RequestedAt) });
+            if (DecidedBy.HasValue && DecidedBy == RequestedBy) yield return new ValidationResult(ApprovalJobValidator.DecidedByCannotBeSameAsRequestedByErrorMessage, new[] { nameof(DecidedBy), nameof(RequestedBy) });
         }
     }
 }

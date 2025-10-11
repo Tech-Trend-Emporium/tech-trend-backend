@@ -1,81 +1,68 @@
 # 🛒 Tech Trend Emporium
 
-This repository contains **Tech Trend Emporium**, built with **.NET 8.0.0** and **PostgreSQL**.  
-The system follows a **microservices-inspired modular architecture** with multiple **DbContexts** (one per bounded context) pointing to the **same database** for learning purposes.
+This repository contains **Tech Trend Emporium**, built with **.NET 8.0.0** and **PostgreSQL** running through **Docker Compose**.  
+The system follows a **layered architecture** (Application, Infrastructure, Domain, Presentation) aligned with **Clean Architecture best practices**.
 
-> **Note:** In production, true microservices usually own **separate databases**. Here we keep **one DB** to reduce operational overhead while preserving clean boundaries in code.
-
----
 
 ## 📌 Vision
 
-- Provide a **modular and scalable** e-commerce backend.
-- Demonstrate **Clean Architecture**, **DDD boundaries**, and **microservice-aligned** practices in .NET.
+- Provide a **scalable and maintainable** e-commerce backend.
+- Demonstrate **Clean Architecture** with clear separation of concerns.
 - Integrate with **external APIs** (FakeStore API) for initial seeding of products and categories.
-- Support **authentication & authorization** with roles: `ADMIN`, `EMPLOYEE`, `SHOPPER` (an optional `SUPERADMIN` can be added for governance flows).
+- Support **authentication & authorization** with roles: `ADMIN`, `EMPLOYEE`, `SHOPPER`.
 - Enable **CI/CD** with Docker, GitHub Actions, and **Azure**.
 
----
 
 ## 🏗️ Architecture Overview
 
-The solution is structured as a set of **bounded contexts**, each with its **own DbContext** and tables it owns.  
-Contexts communicate via HTTP and (optionally) asynchronous messaging.
+The solution is structured into **four layers**:
 
-**Contexts / Services:**
-1. **Identity API** – signup, login, logout, role-based access control.
-2. **Catalog API** – products, categories, inventory, reviews; seeding via FakeStore.
-3. **Promotions API** – coupons and validation.
-4. **Shopping API** – cart, cart items, wishlist, wishlist items.
-5. **Governance API** – approval workflows for product/category operations.
-6. **Seeder Service** – background job to sync with FakeStore API.
+1. **Domain** – enterprise business rules, entities, and core abstractions.  
+2. **Application** – use cases, business logic, interfaces, and DTOs.  
+3. **Infrastructure** – EF Core, repositories, external services, Azure integrations.  
+4. **Presentation** – ASP.NET Core Web API, controllers, filters, middlewares.
 
-**Database Strategy (important):**
-- **One PostgreSQL database / default schema**.
-- **Multiple DbContexts** (Identity, Catalog, Promotions, Shopping, Governance).
-- **Foreign keys only inside a context** (e.g., `Product → Category`, `CartItem → Cart`).
-- **No physical FKs across contexts**: cross-context references are by **IDs/codes** (e.g., `Review.UserId`, `Cart.CouponCode`, `CartItem.ProductId`).  
-  Integrity is enforced at the application layer (API calls or read models).
+**Database Strategy:**
+- **PostgreSQL database** for local development and testing (via Docker Compose).
+- **Azure SQL Database** for production.
+- Schema evolution managed with **Entity Framework Core migrations**.
+- Domain integrity enforced through the **Application layer**.
 
-**Shared Infrastructure:**
-- **API Gateway** – YARP (optionally fronted by **Azure API Management**).
-- **Event Bus** – RabbitMQ (local/dev) or **Azure Service Bus** (cloud).
-- **Observability** – **OpenTelemetry** + **Azure Application Insights / Azure Monitor**.
+**Deployment Strategy:**
+- Services packaged into Docker images.
+- Images stored in **Azure Container Registry (ACR)**.
+- Containers deployed to **Azure Container Instances (ACI)**.
+- Secrets and connection strings managed with **Azure Key Vault (AKV)**.
 
----
 
 ## 🛠️ Tech Stack
 
-- **.NET 8.0.0** (Minimal APIs + modular Clean Architecture)
-- **PostgreSQL 15+**
-- **Docker & Docker Compose**
-- **Entity Framework Core** (migrations **per context**)
-- **MediatR** for CQRS and domain events
-- **MassTransit** for messaging (RabbitMQ / **Azure Service Bus**)
-- **Swagger / OpenAPI** for documentation
-- **Serilog** + **OpenTelemetry** (exporters to **Application Insights**)
-- **GitHub Actions** for CI/CD
-- **Azure** targets: **Azure Kubernetes Service (AKS)** or **Azure Container Apps**, **Azure Container Registry (ACR)**
+- **.NET 8.0.0** (ASP.NET Core Web API + Clean Architecture)  
+- **PostgreSQL** (via Docker Compose for local)  
+- **Azure SQL Database** (production)  
+- **Docker & Docker Compose**  
+- **Entity Framework Core**  
+- **Swagger / OpenAPI** for API documentation  
+- **Serilog** + **OpenTelemetry**  
+- **GitHub Actions** (CI/CD)  
+- **Azure Services:** ACR, ACI, AKV
 
----
 
 ## 📂 Repository Structure
 
 ```plaintext
 .github/workflows/      # CI/CD pipelines
-/docs/                  # Documentation (ADR, API contracts, diagrams)
-/gateway/               # API Gateway (YARP or BFF)
-/services/
-  identity/             # Identity API (Users, Sessions)
-  catalog/              # Catalog API + Seeder (Products, Categories, Inventory, Reviews)
-  promotions/           # Promotions API (Coupons)
-  shopping/             # Shopping API (Cart, CartItems, Wishlist, WishlistItems)
-  governance/           # Governance API (Approval Jobs)
-/infra/                 # IaC (Bicep/Terraform), AKS/Container Apps manifests (Helm/Kustomize/YAML)
-/tests/                 # Unit, Integration, Contract, E2E tests
+/docs/                  # Documentation (ADR, diagrams)
+Application/            # Application layer (use cases, services, interfaces, DTOs)
+Domain/                 # Domain layer (entities, enums, aggregates, core logic)
+Infrastructure/         # Infrastructure layer (EF Core, repositories, integrations)
+Starter/                # Seed from external API
+TechTrendEmporium/      # Presentation layer (Web API, controllers, middlewares)
+/tests/                 # Unit, Integration, E2E tests
+docker-compose.yml      # Docker Compose configuration for local environment
+Dockerfile              # Docker build for API
 ```
 
----
 
 ## 🚀 Getting Started
 
@@ -83,55 +70,58 @@ Contexts communicate via HTTP and (optionally) asynchronous messaging.
 
 - Docker
 - Docker Compose
-- .NET 8 SDK
+- .NET 8 SDK (optional, only if running outside of containers)
 
-### Clone Repository
+
+## 🧱 Run Locally with Docker Compose
+
+Clone Repository
 ```bash
 git clone https://github.com/Tech-Trend-Emporium/tech-trend-backend.git
 cd tech-trend-backend
 ```
 
-Run Locally with Docker Compose
+To run both the API and the PostgreSQL database, simply execute:
+
 ```bash
 docker compose up --build
 ```
 
+This will start:
 
-This will spin up:
+- 🗄️ PostgreSQL container → exposed on localhost:5433
+- ⚙️ TechTrend API container → exposed on localhost:8080
 
-- PostgreSQL (localhost:5432)
-- RabbitMQ (management UI: http://localhost:15672)
-- Microservices containers (each on different ports)
+Once both containers are healthy, you can access the API at:
 
-### Database Migrations
+👉 http://localhost:8080/swagger
 
-Run migrations per service:
+
+## 🧩 Environment Variables (Docker Compose)
+
+The `docker-compose.yml` file handles environment variables automatically, including:
+
+- Database name, user, and password.
+- Connection string for the API (`Host=postgres;Port=5432;Database=techtrend_db;...`).
+- ASP.NET environment (`Development` by default).
+
+
+## 🗃️ Database Migrations
+
+When running locally, the API applies pending migrations automatically at startup.
+If you want to run them manually:
 
 ```bash
-# Catalog
-cd services/catalog
-dotnet ef database update -c CatalogDbContext
-
-# Identity
-cd ../identity
-dotnet ef database update -c IdentityDbContext
-
-# Promotions
-cd ../promotions
-dotnet ef database update -c PromotionsDbContext
-
-# Shopping
-cd ../shopping
-dotnet ef database update -c ShoppingDbContext
-
-# Governance
-cd ../governance
-dotnet ef database update -c GovernanceDbContext
+docker compose exec api dotnet ef database update --project Infrastructure
 ```
 
-Alternative: use a dedicated MigrationsDbContext that maps all tables only for schema evolution.
+Or, if running outside Docker:
 
----
+```bash
+cd Infrastructure
+dotnet ef database update
+```
+
 
 ## 🧪 Testing
 
@@ -141,9 +131,8 @@ Each service includes unit and integration tests:
 dotnet test
 ```
 
-Contract and E2E tests are under /tests.
+Contract and E2E tests are under `/tests`.
 
----
 
 ## 🔄 CI/CD (Azure)
 
@@ -154,42 +143,39 @@ CI (on every push/PR to main or feature/*):
 - Push images to Azure Container Registry (ACR)
 
 CD (on merge to main):
-
-- Deploy to AKS (Helm/Kustomize) or Azure Container Apps
-- Apply EF Core migrations per context (job or init container)
+- Deploy container to Azure Container Instances (ACI)
+- Apply EF Core migrations automatically at startup
+- Retrieve secrets and connection strings from Azure Key Vault (AKV)
 - Notify team via Slack/Teams
-- See workflows under .github/workflows/
+
+Workflows are defined under `.github/workflows/`.
 
 Use GitHub OIDC to authenticate to Azure (no long-lived secrets).
-Environments: dev, prod with approvals and protection rules.
+Environments: `dev`, `prod` with approvals and protection rules.
 
 ## 📖 Documentation
 
-- Wiki: Branching strategy, PR guidelines, architectural decisions.
-- ADR: Stored under /docs/adr/.
-- API Docs: Each service exposes /swagger.
+- `/docs/` → ADRs, diagrams.
+- `/swagger` → API Docs.
+- `MAFEFILE.md` → Test users, endpoints, and detailed setup.
 
----
 
 ## 🤝 Contributing
 
 We follow a Trunk-Based Development strategy:
-- All changes are merged into main via Pull Request.
+- All changes are merged into `main` via Pull Request.
 - Each PR requires 2 approvals.
 - Keep PRs small and focused.
 
----
 
 ## 🗺️ Roadmap
 
-- Identity + Catalog services (MVP)
-- Governance (approval) workflow for products & categories
-- Promotions (coupons) and Shopping (cart, wishlist)
-- CI/CD with GitHub Actions → deploy to Azure (AKS/Container Apps)
-- Observability via OpenTelemetry → Application Insights
-- Optional: switch to separate databases per context as the system evolves
+- Complete layered architecture refactoring (MVP).
+- Integrate Azure Key Vault for production secrets.
+- Improve CI/CD with GitHub Actions + ACR + ACI.
+- Observability with OpenTelemetry → Application Insights.
+- Add automated integration tests with Azure SQL.
 
----
 
 ## 📜 License
 

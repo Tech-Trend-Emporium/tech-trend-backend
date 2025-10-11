@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Validations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -28,8 +29,7 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (Available > Total)
-                yield return new ValidationResult("The field Available cannot be greater than Total field.", new[] { nameof(Available), nameof(Total) });
+            if (Available > Total) yield return new ValidationResult(InventoryValidator.AvailableGreaterThanTotalErrorMessage, new[] { nameof(Available), nameof(Total) });
         }
     }
 }

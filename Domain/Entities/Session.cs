@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Domain.Validations;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,8 +29,7 @@ namespace Data.Entities
 
         public IEnumerable<ValidationResult> Validate(ValidationContext _)
         {
-            if (LogoutAt.HasValue && LogoutAt < LoginAt)
-                yield return new ValidationResult("The field LogoutAt cannot be before LoginAt field.", new[] { nameof(LogoutAt), nameof(LoginAt) });
+            if (LogoutAt.HasValue && LogoutAt < LoginAt) yield return new ValidationResult(SessionValidator.LogoutAtBeforeLoginAtErrorMessage, new[] { nameof(LogoutAt), nameof(LoginAt) });
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.Validations;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -30,8 +31,7 @@ namespace Data.Entities
 
         public void AddItem(int productId)
         {
-            if (Items.Any(i => i.ProductId == productId))
-                throw new InvalidOperationException("The product is already in the cart.");
+            if (Items.Any(i => i.ProductId == productId)) throw new InvalidOperationException(CartValidator.ProductAlreadyInCartErrorMessage);
 
             Items.Add(new CartItem { ProductId = productId, Cart = this });
         }
@@ -44,8 +44,10 @@ namespace Data.Entities
             Items.Remove(item);
         }
 
-        public void Clear() => Items.Clear();
-
+        public void Clear() 
+        {
+            Items.Clear();
+        }
     }
 
     [Index(nameof(CartId), nameof(ProductId), IsUnique = true)]
@@ -66,5 +68,4 @@ namespace Data.Entities
         public int ProductId { get; set; }
         public Product Product { get; set; } = null!;
     }
-
 }

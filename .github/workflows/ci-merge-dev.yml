@@ -1,0 +1,128 @@
+﻿name: ci-merge-dev
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [closed]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-dev-merge-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write  # for azure/login OIDC
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. myregistry.azurecr.io
+  REGISTRY_NAME:  ${{ secrets.ACR_NAME }}            # e.g. myregistry (optional)
+  IMAGE_NAME:     tech-trend-emporium/api
+  TAG_PREFIX:     dev
+
+jobs:
+  build-and-push:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true) }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "DATE_TAG=$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
+          # Prefer explicit ACR_NAME; otherwise derive from server FQDN (strip first dot segment)
+          if [ -z "${{ env.REGISTRY_NAME }}" ] && [ -n "${{ env.REGISTRY_SERVER }}" ]; then
+            echo "REG_NAME=${{ env.REGISTRY_SERVER }} | cut -d. -f1" # for log only
+            REG_NAME_DERIVED="$(echo "${{ env.REGISTRY_SERVER }}" | cut -d. -f1)"
+            echo "REG_NAME=$REG_NAME_DERIVED" >> "$GITHUB_OUTPUT"
+          else
+            echo "REG_NAME=${{ env.REGISTRY_NAME }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --no-restore -c Release
+
+      - name: Tests
+        run: dotnet test --no-build -c Release
+
+      - name: Docker metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_SERVER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ env.TAG_PREFIX }}-${{ steps.vars.outputs.SHORT_SHA }}
+            type=raw,value=${{ steps.vars.outputs.DATE_TAG }}
+            type=raw,value=${{ env.TAG_PREFIX }}
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      # ---- Azure auth ----
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: ACR docker login via az
+        run: az acr login --name "$REGISTRY_NAME"
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+
+      - name: Capture digest
+        id: dig
+        run: echo "DIGEST=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish image reference (for CD)
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-ref-${{ steps.vars.outputs.SHORT_SHA }}
+          path: image-ref.json
+        env:
+          REG: ${{ env.REGISTRY_SERVER }}
+          IMG: ${{ env.IMAGE_NAME }}
+          DIG: ${{ steps.dig.outputs.DIGEST }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### 🚀 Built & pushed to ACR";
+            echo "- Image: \`${{ env.REGISTRY_SERVER }}/${{ env.IMAGE_NAME }}\`";
+            echo "- Tags:";
+            echo "  - \`${{ env.TAG_PREFIX }}-${{ steps.vars.outputs.SHORT_SHA }}\`";
+            echo "  - \`${{ steps.vars.outputs.DATE_TAG }}\`";
+            echo "  - \`${{ env.TAG_PREFIX }}\`";
+            echo "- Digest: \`${{ steps.dig.outputs.DIGEST }}\`";
+            if [ "${{ steps.testscan.outputs.FOUND }}" = "0" ]; then
+              echo "- Tests: _none found — skipped_";
+            else
+              echo "- Tests: ran ${{ steps.testscan.outputs.FOUND }} project(s)";
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

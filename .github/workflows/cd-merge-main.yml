@@ -1,91 +1,184 @@
-name: cd-on-merge
+﻿name: cd-merge-main
 
 on:
   pull_request:
-    types: [closed]
-    branches: [main]
+    branches: [ main ]
+    types: [ closed ]
   workflow_dispatch:
+    inputs:
+      image_ref:
+        description: "ACR image ref from CI (tag like 'dev'|'dev-<sha>'|'YYYY.MM.DD-HHMM' OR a digest 'sha256:...')"
+        required: true
 
 concurrency:
-  group: cd-merge-main
-  cancel-in-progress: false
+  group: cd-main-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
-  id-token: write    # required for Azure OIDC
   contents: read
+  id-token: write  # for azure/login OIDC
 
 env:
-  # --- Your configured vars/secrets ---
-  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}        # e.g. tteacr.azurecr.io
-  REGISTRY_NAMESPACE: tech-trend-emporium                 # (not used directly; kept for clarity)
-  ACR_REPO: tech-trend-emporium/api                       # repo path inside ACR
-  RESOURCE_GROUP: ${{ vars.RG }}
-  ACA_ENV_NAME: ${{ vars.ACA_ENV_NAME }}
-  ACA_APP_NAME: ${{ vars.ACA_APP_NAME }}
-
-  # --- Derived (from the PR that was merged) ---
-  IMAGE_TAG: ${{ github.event.pull_request.head.sha }}    # EXACT artifact built by CI
-  BLUE_LABEL: blue
-  GREEN_LABEL: green
-  HEALTH_TIMEOUT_SECONDS: "120"                           # tweak as needed
+  REGISTRY_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}          # e.g. myacr.azurecr.io
+  ACR_NAME:        ${{ secrets.ACR_NAME }}                  # e.g. myacr
+  ACR_REPO:        tech-trend-emporium/api                  # repo path in ACR
+  RESOURCE_GROUP:  ${{ vars.RG }}
+  ACA_ENV_NAME:    ${{ vars.ACA_ENV_NAME }}
+  ACA_APP_NAME:    ${{ vars.ACA_APP_NAME }}
+  HEALTH_PATH:     /health/live
+  DEPLOY_LABEL:    green
+  STABLE_LABEL:    blue
 
 jobs:
-  deploy:
-  # ---  if: ${{ github.event.pull_request.merged == true }}
+  deploy-blue-green:
+    # Auto only if PR to main was merged; always allow manual dispatch
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true) }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (optional)
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set variables
+        id: vars
+        shell: bash
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "DATE_TAG=$(date -u +'%Y.%m.%d-%H%M')" >> "$GITHUB_OUTPUT"
+          # Prefer manual input. If absent, try to use the rolling 'dev' tag from CI.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "IMAGE_REF_INPUT=${{ github.event.inputs.image_ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "IMAGE_REF_INPUT=dev" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy green revision at 0% (create/label/split)
-        uses: azure/cli@v2
-        with:
-          azcliversion: 2.62.0
-    # --- First test the existence of the Container App       
-          inlineScript: |
-            az containerapp show --name $ACA_APP_NAME --resource-group $RESOURCE_GROUP
-            
-            set -euo pipefail
+      - name: Resolve digest from ACR (tag or digest)
+        id: digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF="${{ steps.vars.outputs.IMAGE_REF_INPUT }}"
+          if [[ "$REF" == sha256:* ]]; then
+            DIGEST="$REF"
+          else
+            # Resolve tag -> digest
+            DIGEST="sha256:$(az acr repository show \
+              --name "$ACR_NAME" \
+              --image "$ACR_REPO:$REF" \
+              --query digest -o tsv | sed 's/^sha256://')"
+          fi
 
-            APP="$ACA_APP_NAME"
-            RG="$RESOURCE_GROUP"
-            ENV_NAME="$ACA_ENV_NAME"
-            IMG="$REGISTRY_SERVER/$ACR_REPO:$IMAGE_TAG"
-            REV="$IMAGE_TAG"
-            BLUE="$BLUE_LABEL"
-            GREEN="$GREEN_LABEL"
+          if [ -z "$DIGEST" ]; then
+            echo "Failed to resolve image digest for '$REF'"; exit 1
+          fi
 
-            echo "Deploying immutable image: $IMG"
+          echo "DIGEST=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_URI=${REGISTRY_SERVER}/${ACR_REPO}@${DIGEST}" >> "$GITHUB_OUTPUT"
 
-            # 1) Ensure multiple revisions mode (needed for traffic split)
-            az containerapp revision set-mode \
-              --name "$APP" \
-              --resource-group "$RG" \
-              --mode multiple
+      - name: Discover current traffic + FQDN
+        id: traffic
+        shell: bash
+        run: |
+          # Get current traffic config and base FQDN
+          FQDN=$(az containerapp show -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
 
-            # 2) Create NEW revision with the CI image
-            az containerapp update \
-              --name "$APP" \
-              --resource-group "$RG" \
-              --image "$IMG" \
-              --revision-suffix "$REV"
+          # Find the currently weighted (production) revision, if any
+          CURR_PROD=$(az containerapp show -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --query "properties.configuration.ingress.traffic[?weight> \`0\`].revisionName | [0]" -o tsv)
 
-            # 3) Identify the latest (just-created) active revision
-            LATEST_REV=$(
-              az containerapp revision list -g "$RG" -n "$APP" \
-                --query "sort_by([?properties.active==\`true\`], &properties.createdTimeUtc)[-1].name" -o tsv
-            )
-            echo "Latest (green) revision: $LATEST_REV"
+          echo "FQDN=$FQDN" >> "$GITHUB_OUTPUT"
+          echo "CURR_PROD_REV=$CURR_PROD" >> "$GITHUB_OUTPUT"
 
-            # Label it as green (idempotent)
-            az containerapp revision label add -g "$RG" -n "$APP" --label "$GREEN" --revision "$LATEST_REV" || true
+      - name: Create new revision (green) from resolved image
+        id: newrev
+        shell: bash
+        run: |
+          REV_SUFFIX="$(date -u +'%Y%m%d-%H%M')-${{ steps.vars.outputs.SHORT_SHA }}"
+          az containerapp update \
+            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --image "${{ steps.digest.outputs.IMAGE_URI }}" \
+            --revision-suffix "$REV_SUFFIX"
 
-            # Find current prod (any active revision with traffic > 0), label as blue
-            PROD_REV=$(
-              az containerapp revision list -g "$RG" -n
+          # The deterministic revision name is <app>--<suffix>. :contentReference[oaicite:2]{index=2}
+          echo "REV_NAME=${ACA_APP_NAME}--${REV_SUFFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Label revisions (blue=current prod, green=new)
+        if: ${{ steps.traffic.outputs.CURR_PROD_REV != '' }}
+        shell: bash
+        run: |
+          # Ensure current prod has 'blue'
+          az containerapp revision label add \
+            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --label "${STABLE_LABEL}" \
+            --revision "${{ steps.traffic.outputs.CURR_PROD_REV }}"
+
+          # Assign 'green' to the new revision
+          az containerapp revision label add \
+            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --label "${DEPLOY_LABEL}" \
+            --revision "${{ steps.newrev.outputs.REV_NAME }}"
+        # Label-based URLs enable testing the new revision without shifting prod traffic. :contentReference[oaicite:3]{index=3}
+
+      - name: Label new revision if no previous prod (first deploy)
+        if: ${{ steps.traffic.outputs.CURR_PROD_REV == '' }}
+        shell: bash
+        run: |
+          az containerapp revision label add \
+            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --label "${DEPLOY_LABEL}" \
+            --revision "${{ steps.newrev.outputs.REV_NAME }}"
+
+      - name: Wait for readiness on new revision (TLS-safe)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # i.e. tteaca.thankfulfield-0657673c.eastus2.azurecontainerapps.io
+            BASE_FQDN="${{ steps.traffic.outputs.FQDN }}"
+            ENV_SUFFIX="${BASE_FQDN#*.}"
+
+            REV_NAME="${{ steps.newrev.outputs.REV_NAME }}"
+            URL="https://${REV_NAME}.${ENV_SUFFIX}${HEALTH_PATH}"
+
+            echo "Probing revision directly: $URL"
+            for i in {1..60}; do
+                HTTP_CODE=$(curl -sS -m 5 -o /dev/null -w "%{http_code}" "$URL" || true)
+                if [ "$HTTP_CODE" = "200" ]; then
+                echo "Revision is healthy (HTTP 200)."
+                exit 0
+                fi
+                sleep 5
+            done
+            echo "Revision did not become healthy in time."
+            exit 1
+
+      - name: Shift 100% traffic to green (keep blue as rollback)
+        shell: bash
+        run: |
+          # Prefer label-based traffic switch (green/blue). :contentReference[oaicite:5]{index=5}
+          az containerapp ingress traffic set \
+            -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --label-weight "${DEPLOY_LABEL}=100" "${STABLE_LABEL}=0"
+
+      - name: Output summary
+        shell: bash
+        run: |
+          APP_URL=$(az containerapp show -g "${RESOURCE_GROUP}" -n "${ACA_APP_NAME}" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          {
+            echo "Deployed to A.C.A (blue/green)";
+            echo "- **Image**: \`${{ steps.digest.outputs.IMAGE_URI }}\`";
+            echo "- **New revision (green)**: \`${{ steps.newrev.outputs.REV_NAME }}\`";
+            if [ -n "${{ steps.traffic.outputs.CURR_PROD_REV }}" ]; then
+              echo "- **Previous prod (blue)**: \`${{ steps.traffic.outputs.CURR_PROD_REV }}\`";
+            fi
+            echo "- **Prod URL**: https://${APP_URL}";
+            echo "- **Green URL**: https://${{ env.DEPLOY_LABEL }}.${APP_URL}";
+            echo "- **Health endpoint**: \`${{ env.HEALTH_PATH }}\`";
+          } >> "$GITHUB_STEP_SUMMARY"

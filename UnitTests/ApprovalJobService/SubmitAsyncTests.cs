@@ -5,6 +5,7 @@ using Application.Exceptions;
 using Application.Services;
 using Application.Services.Implementations;
 using Data.Entities;
+using Domain.Constants;
 using Domain.Enums;
 using General.Dto.Category;
 using General.Dto.Product;
@@ -76,7 +77,7 @@ namespace UnitTests.ApprovalJobs
             var ex = await Assert.ThrowsAsync<BadRequestException>(
                 () => _sut.SubmitAsync(requesterUserId, dto, ct));
 
-            Assert.Equal("Payload es obligatorio para CREATE.", ex.Message);
+            Assert.Equal(ApprovalJobValidator.PayloadRequiredMessage, ex.Message);
         }
 
         [Fact]

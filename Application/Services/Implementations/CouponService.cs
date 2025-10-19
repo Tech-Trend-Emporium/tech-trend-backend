@@ -127,13 +127,11 @@ namespace Application.Services.Implementations
         /// </returns>
         public async Task<(IReadOnlyList<CouponResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
-            var itemsTask = _couponRepository.ListAsync(skip, take, ct);
-            var totalTask = _couponRepository.CountAsync(null, ct);
+            var listTask = await _couponRepository.ListAsync(skip, take, ct);
+            var total = await _couponRepository.CountAsync(null, ct);
 
-            await Task.WhenAll(itemsTask, totalTask);
-
-            var items = CouponMapper.ToResponseList(itemsTask.Result);
-            return (items, totalTask.Result);
+            var items = CouponMapper.ToResponseList(listTask);
+            return (items, total);
         }
 
         /// <summary>

@@ -1,13 +1,6 @@
 ﻿using Application.Dtos.Inventory;
-using Data.Entities;
 using Domain.Validations;
-using General.Dto.Inventory;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace General.Dto.Product
 {

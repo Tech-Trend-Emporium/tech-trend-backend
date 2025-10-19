@@ -33,7 +33,7 @@ if (builder.Environment.IsProduction())
 
 // Configure PostgreSQL connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection Missed");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString, npg => npg.EnableRetryOnFailure(5)));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 // Configure Serilog
 builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));

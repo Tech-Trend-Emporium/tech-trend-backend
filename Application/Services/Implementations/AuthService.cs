@@ -201,13 +201,7 @@ namespace Application.Services.Implementations
             if (await _userRepository.ExistsAsync(u => u.Email == dto.Email || u.Username == dto.Username, ct))
                 throw new ConflictException(AuthValidator.EmailOrUsernameAlreadyTakenErrorMessage);
 
-            var user = new User
-            {
-                Email = dto.Email,
-                Username = dto.Username,
-                Role = Domain.Enums.Role.SHOPPER,
-                CreatedAt = DateTime.UtcNow
-            };
+            var user = AuthMapper.ToEntity(dto);
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
             _userRepository.Add(user);

@@ -1,12 +1,6 @@
 ﻿using Application.Dtos.Auth;
 using Data.Entities;
 using Domain.Entities;
-using General.Dto.User;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Mappers
 {

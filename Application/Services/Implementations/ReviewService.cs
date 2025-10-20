@@ -1,19 +1,17 @@
 ﻿using Application.Abstraction;
 using Application.Abstractions;
 using Application.Exceptions;
-using Data.Entities;
 using Domain.Validations;
 using General.Dto.Review;
 using General.Mappers;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services.Implementations
 {
+    /// <summary>
+    /// Provides business logic for managing product reviews, including creation,
+    /// updates, deletion, and listing with user context.
+    /// This class is documented by AI.
+    /// </summary>
     public class ReviewService : IReviewService
     {
         private readonly IReviewRepository _reviewRepository;
@@ -21,7 +19,18 @@ namespace Application.Services.Implementations
         private readonly IProductRepository _productRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ReviewService(IReviewRepository reviewRepository, IUserRepository userRepository, IProductRepository productRepository, IUnitOfWork unitOfWork)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReviewService"/> class.
+        /// </summary>
+        /// <param name="reviewRepository">Repository for review persistence and queries.</param>
+        /// <param name="userRepository">Repository for accessing user data.</param>
+        /// <param name="productRepository">Repository for accessing product data.</param>
+        /// <param name="unitOfWork">Unit of Work to coordinate transaction boundaries.</param>
+        public ReviewService(
+            IReviewRepository reviewRepository,
+            IUserRepository userRepository,
+            IProductRepository productRepository,
+            IUnitOfWork unitOfWork)
         {
             _reviewRepository = reviewRepository;
             _userRepository = userRepository;
@@ -29,11 +38,24 @@ namespace Application.Services.Implementations
             _unitOfWork = unitOfWork;
         }
 
+        /// <summary>
+        /// Returns the total number of reviews available.
+        /// </summary>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>The total count of reviews.</returns>
         public Task<int> CountAsync(CancellationToken ct = default)
         {
             return _reviewRepository.CountAsync(null, ct);
         }
 
+        /// <summary>
+        /// Retrieves a review by its identifier and maps it to a response including the author's username.
+        /// </summary>
+        /// <param name="id">The review identifier.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>
+        /// A <see cref="ReviewResponse"/> if found; otherwise, <c>null</c>.
+        /// </returns>
         public async Task<ReviewResponse?> GetByIdAsync(int id, CancellationToken ct = default)
         {
             var entity = await _reviewRepository.GetByIdAsync(ct, id);
@@ -44,6 +66,15 @@ namespace Application.Services.Implementations
             return ReviewMapper.ToResponse(entity, user.Username);
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of reviews with the total count, including usernames.
+        /// </summary>
+        /// <param name="skip">The number of records to skip. Defaults to 0.</param>
+        /// <param name="take">The number of records to take. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>
+        /// A tuple with the list of reviews and the total number of reviews.
+        /// </returns>
         public async Task<(IReadOnlyList<ReviewResponse> Items, int Total)> ListWithCountAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
             var entities = await _reviewRepository.ListAsync(skip, take, ct);
@@ -58,6 +89,13 @@ namespace Application.Services.Implementations
             return (items, total);
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of reviews, including usernames.
+        /// </summary>
+        /// <param name="skip">The number of records to skip. Defaults to 0.</param>
+        /// <param name="take">The number of records to take. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>A read-only list of <see cref="ReviewResponse"/> objects.</returns>
         public async Task<IReadOnlyList<ReviewResponse>> ListAsync(int skip = 0, int take = 50, CancellationToken ct = default)
         {
             var entities = await _reviewRepository.ListAsync(skip, take, ct);
@@ -70,6 +108,15 @@ namespace Application.Services.Implementations
             return ReviewMapper.ToResponseList(entities, usernameById);
         }
 
+        /// <summary>
+        /// Creates a new review for a product authored by the specified username.
+        /// Validates user existence, product existence, and duplicate constraints.
+        /// </summary>
+        /// <param name="dto">The creation request containing username, product, and review content.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>The created <see cref="ReviewResponse"/> including the author's username.</returns>
+        /// <exception cref="NotFoundException">Thrown when the user or product cannot be found.</exception>
+        /// <exception cref="ConflictException">Thrown when a review already exists for the same user and product.</exception>
         public async Task<ReviewResponse> CreateAsync(CreateReviewRequest dto, CancellationToken ct = default)
         {
             var username = dto.Username.Trim().ToUpper();
@@ -89,6 +136,14 @@ namespace Application.Services.Implementations
             return ReviewMapper.ToResponse(entity, user.Username);
         }
 
+        /// <summary>
+        /// Updates an existing review.
+        /// </summary>
+        /// <param name="id">The review identifier.</param>
+        /// <param name="dto">The update request with new rating/comment values.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>The updated <see cref="ReviewResponse"/> including the author's username.</returns>
+        /// <exception cref="NotFoundException">Thrown when the review or its user cannot be found.</exception>
         public async Task<ReviewResponse> UpdateAsync(int id, UpdateReviewRequest dto, CancellationToken ct = default)
         {
             var entity = await _reviewRepository.GetByIdAsync(ct, id);
@@ -105,6 +160,12 @@ namespace Application.Services.Implementations
             return ReviewMapper.ToResponse(entity, user.Username);
         }
 
+        /// <summary>
+        /// Deletes a review by its identifier.
+        /// </summary>
+        /// <param name="id">The review identifier.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns><c>true</c> if the review was deleted; otherwise, <c>false</c>.</returns>
         public async Task<bool> DeleteAsync(int id, CancellationToken ct = default)
         {
             var deleted = await _reviewRepository.DeleteByIdAsync(ct, id);
@@ -114,6 +175,15 @@ namespace Application.Services.Implementations
             return true;
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of reviews for a given product, including usernames.
+        /// </summary>
+        /// <param name="productId">The product identifier to filter reviews.</param>
+        /// <param name="skip">The number of records to skip. Defaults to 0.</param>
+        /// <param name="take">The number of records to take. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>A read-only list of <see cref="ReviewResponse"/> objects for the product.</returns>
+        /// <exception cref="NotFoundException">Thrown when the product does not exist.</exception>
         public async Task<IReadOnlyList<ReviewResponse>> ListByProductAsync(int productId, int skip = 0, int take = 50, CancellationToken ct = default)
         {
             var productExists = await _productRepository.ExistsAsync(p => p.Id == productId, ct);
@@ -129,6 +199,17 @@ namespace Application.Services.Implementations
             return ReviewMapper.ToResponseList(entities, usernameById);
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of reviews for a given product with the total count, including usernames.
+        /// </summary>
+        /// <param name="productId">The product identifier to filter reviews.</param>
+        /// <param name="skip">The number of records to skip. Defaults to 0.</param>
+        /// <param name="take">The number of records to take. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> for task cancellation.</param>
+        /// <returns>
+        /// A tuple containing the list of reviews for the product and the total count.
+        /// </returns>
+        /// <exception cref="NotFoundException">Thrown when the product does not exist.</exception>
         public async Task<(IReadOnlyList<ReviewResponse> Items, int Total)> ListByProductWithCountAsync(int productId, int skip = 0, int take = 50, CancellationToken ct = default)
         {
             var productExists = await _productRepository.ExistsAsync(p => p.Id == productId, ct);

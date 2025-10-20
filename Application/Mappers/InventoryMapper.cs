@@ -1,12 +1,6 @@
 ﻿using Application.Dtos.Inventory;
 using Data.Entities;
 using General.Dto.Inventory;
-using General.Dto.Product;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace General.Mappers
 {

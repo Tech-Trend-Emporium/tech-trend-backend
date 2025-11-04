@@ -33,5 +33,24 @@ namespace Application.Abstraction
         /// The task result contains the newly created <see cref="Cart"/> entity.
         /// </returns>
         Task<Cart> CreateForUserAsync(int userId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Lists placed orders (carts with <c>Status = PLACED</c>) for a user, including items, products, and coupon.
+        /// Results are ordered by <see cref="Cart.PlacedAtUtc"/> descending.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="skip">Number of records to skip. Defaults to 0.</param>
+        /// <param name="take">Number of records to return. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/>.</param>
+        /// <returns>A read-only list of placed <see cref="Cart"/> entities.</returns>
+        Task<IReadOnlyList<Cart>> ListPlacedByUserAsync(int userId, int skip = 0, int take = 50, CancellationToken ct = default);
+
+        /// <summary>
+        /// Counts placed orders (carts with <c>Status = PLACED</c>) for a user.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/>.</param>
+        /// <returns>Total number of placed carts for the user.</returns>
+        Task<int> CountPlacedByUserAsync(int userId, CancellationToken ct = default);
     }
 }

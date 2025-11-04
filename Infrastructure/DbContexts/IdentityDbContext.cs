@@ -29,7 +29,6 @@ namespace Data
             mb.Entity<User>().Ignore(u => u.RequestedJobs);
             mb.Entity<User>().Ignore(u => u.DecidedJobs);
             mb.Entity<User>().Ignore(u => u.WishList);   
-            mb.Entity<User>().Ignore(u => u.Cart);
 
             mb.Entity<Session>()
               .HasOne(s => s.User)

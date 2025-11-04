@@ -29,6 +29,12 @@ namespace Data.Entities
         [Required]
         public bool IsActive { get; set; } = true;
 
+        public int? RecoveryQuestionId { get; set; }
+        public RecoveryQuestion? RecoveryQuestion { get; set; }
+
+        [MaxLength(256)]
+        public string? RecoveryAnswerHash { get; set; }
+
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -39,8 +45,7 @@ namespace Data.Entities
 
         public WishList? WishList { get; set; }
 
-        public Cart? Cart { get; set; }
-
+        public ICollection<Cart> Carts { get; set; } = new List<Cart>();
         public ICollection<Session> Sessions { get; set; } = new List<Session>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();

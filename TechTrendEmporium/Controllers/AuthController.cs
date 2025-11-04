@@ -20,6 +20,11 @@ namespace API.Controllers
         private readonly IAuthService _authService;
 
         /// <summary>
+        /// Gets the ID of the currently authenticated user from their claims.
+        /// </summary>
+        private int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AuthController"/> class.
         /// </summary>
         /// <param name="authService">The authentication service responsible for managing user authentication operations.</param>
@@ -98,8 +103,65 @@ namespace API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> SignOut([FromBody] SignOutRequest dto, CancellationToken ct)
         {
-            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-            await _authService.SignOut(dto, currentUserId, ct);
+            await _authService.SignOut(dto, CurrentUserId, ct);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Sets or updates the current user's recovery question and answer.
+        /// The answer is normalized and stored as a hash server-side.
+        /// </summary>
+        /// <param name="dto">The recovery question id and plain-text answer.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>No content on success.</returns>
+        /// <response code="204">Recovery info was saved successfully.</response>
+        /// <response code="400">Validation failed.</response>
+        /// <response code="401">User is not authenticated.</response>
+        /// <response code="404">Recovery question not found.</response>
+        [Authorize]
+        [HttpPost("recovery/set-info")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> SetRecoveryInfo([FromBody] SetRecoveryInfoRequest dto, CancellationToken ct)
+        {
+            await _authService.SetRecoveryInfoAsync(CurrentUserId, dto, ct);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Verifies a user's recovery answer and issues a short-lived password reset token if correct.
+        /// </summary>
+        /// <param name="dto">Email or username, recovery question id, and the answer.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A short-lived reset token to be used on the password reset endpoint.</returns>
+        /// <response code="200">Returns a password reset token and its expiration.</response>
+        /// <response code="400">Validation failed.</response>
+        /// <response code="401">Recovery not configured or answer is incorrect.</response>
+        /// <response code="404">User not found.</response>
+        [AllowAnonymous]
+        [HttpPost("recovery/verify")]
+        [ProducesResponseType(typeof(VerifyRecoveryAnswerResponse), StatusCodes.Status200OK)]
+        public async Task<ActionResult<VerifyRecoveryAnswerResponse>> VerifyRecovery([FromBody] VerifyRecoveryAnswerRequest dto, CancellationToken ct)
+        {
+            var result = await _authService.VerifyRecoveryAnswerAsync(dto, ct);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Resets a user's password using a valid password reset token obtained from the verification endpoint.
+        /// </summary>
+        /// <param name="dto">The reset token and the new password.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>No content on success.</returns>
+        /// <response code="204">Password was reset successfully.</response>
+        /// <response code="400">Validation failed (e.g., password policy).</response>
+        /// <response code="401">Token is invalid or expired.</response>
+        /// <response code="404">User not found.</response>
+        [AllowAnonymous]
+        [HttpPost("recovery/reset")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest dto, CancellationToken ct)
+        {
+            await _authService.ResetPasswordAsync(dto, ct);
             return NoContent();
         }
     }

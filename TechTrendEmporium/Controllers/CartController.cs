@@ -142,6 +142,7 @@ namespace API.Controllers
         /// <summary>
         /// Performs the checkout process for the current user's shopping cart.
         /// </summary>
+        /// <param name="dto">The checkout request containing payment and shipping details.</param>
         /// <param name="ct">An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>No content if the checkout is completed successfully.</returns>
         /// <response code="204">The checkout was successful and the cart was cleared.</response>
@@ -149,10 +150,29 @@ namespace API.Controllers
         [Authorize(Roles = "SHOPPER")]
         [HttpPost("checkout")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> Checkout(CancellationToken ct)
+        public async Task<IActionResult> Checkout([FromBody] CheckoutRequest dto, CancellationToken ct)
         {
-            await _cartService.CheckoutAsync(CurrentUserId, ct);
+            await _cartService.CheckoutAsync(CurrentUserId, dto, ct);
             return NoContent();
+        }
+
+        /// <summary>
+        /// Returns the authenticated user's past orders (PLACED carts), paginated.
+        /// </summary>
+        /// <param name="skip">The number of records to skip before returning results. Defaults to 0.</param>
+        /// <param name="take">The number of records to return. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/>.</param>
+        /// <returns>
+        /// <c>200 OK</c> with an object containing <c>Total</c> and <c>Items</c>.
+        /// </returns>
+        /// <response code="200">Returns the paginated list of placed orders for the current user.</response>
+        [Authorize(Roles = "SHOPPER")]
+        [HttpGet("orders")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListMine([FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)
+        {
+            var (items, total) = await _cartService.ListMyOrdersAsync(CurrentUserId, skip, take, ct);
+            return Ok(new { Total = total, Items = items });
         }
     }
 }

@@ -81,11 +81,34 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
                     b.Property<int?>("CouponId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PaidAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("PaymentMethod")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PaymentStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("PlacedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal?>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -94,8 +117,9 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("CouponId");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Status", "CreatedAt");
 
                     b.ToTable("carts", (string)null);
                 });
@@ -344,6 +368,13 @@ namespace Infrastructure.Persistence.Migrations.App
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<string>("RecoveryAnswerHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int?>("RecoveryQuestionId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Role")
                         .HasColumnType("integer");
 
@@ -364,6 +395,8 @@ namespace Infrastructure.Persistence.Migrations.App
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("RecoveryQuestionId");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -418,6 +451,27 @@ namespace Infrastructure.Persistence.Migrations.App
                         .IsUnique();
 
                     b.ToTable("wish_list_items", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.RecoveryQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Question")
+                        .IsUnique();
+
+                    b.ToTable("recovery_questions", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.RefreshToken", b =>
@@ -487,8 +541,8 @@ namespace Infrastructure.Persistence.Migrations.App
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Data.Entities.User", "User")
-                        .WithOne("Cart")
-                        .HasForeignKey("Data.Entities.Cart", "UserId")
+                        .WithMany("Carts")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -568,6 +622,16 @@ namespace Infrastructure.Persistence.Migrations.App
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Data.Entities.User", b =>
+                {
+                    b.HasOne("Domain.Entities.RecoveryQuestion", "RecoveryQuestion")
+                        .WithMany()
+                        .HasForeignKey("RecoveryQuestionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("RecoveryQuestion");
+                });
+
             modelBuilder.Entity("Data.Entities.WishList", b =>
                 {
                     b.HasOne("Data.Entities.User", "User")
@@ -645,7 +709,7 @@ namespace Infrastructure.Persistence.Migrations.App
 
             modelBuilder.Entity("Data.Entities.User", b =>
                 {
-                    b.Navigation("Cart");
+                    b.Navigation("Carts");
 
                     b.Navigation("DecidedJobs");
 

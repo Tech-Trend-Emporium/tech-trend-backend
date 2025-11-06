@@ -65,5 +65,37 @@ namespace General.Mappers
                 Quantity = quantity
             };
         }
+
+        public static OrderResponse ToOrderResponse(Cart cart)
+        {
+            if (cart is null) throw new ArgumentNullException(nameof(cart));
+
+            var items = cart.Items.Select(i => new OrderItemResponse
+            {
+                ProductId = i.ProductId,
+                Title = i.Product?.Title ?? string.Empty,
+                UnitPrice = i.Product?.Price ?? 0m,
+                Quantity = i.Quantity,
+                Subtotal = (i.Product?.Price ?? 0m) * i.Quantity
+            }).ToList();
+
+            return new OrderResponse
+            {
+                Id = cart.Id,
+                UserId = cart.UserId,
+                Address = cart.Address,
+                PaymentMethod = cart.PaymentMethod.ToString(),
+                PaymentStatus = cart.PaymentStatus.ToString(),
+                TotalAmount = cart.TotalAmount,
+                PlacedAtUtc = cart.PlacedAtUtc,
+                PaidAtUtc = cart.PaidAtUtc,
+                Items = items
+            };
+        }
+
+        public static IReadOnlyList<OrderResponse> ToOrderResponseList(IEnumerable<Cart> carts)
+        {
+            return carts.Select(ToOrderResponse).ToList();
+        }
     }
 }

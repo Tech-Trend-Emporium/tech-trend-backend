@@ -145,6 +145,8 @@ namespace Application.Services.Implementations
         /// <exception cref="ConflictException">Thrown when another category already uses the same name.</exception>
         public async Task<CategoryResponse> UpdateAsync(int id, UpdateCategoryRequest dto, CancellationToken ct = default)
         {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+
             var entity = await _categoryRepository.GetByIdAsync(ct, id);
             if (entity is null)
                 throw new NotFoundException(CategoryValidator.CategoryNotFound(id));

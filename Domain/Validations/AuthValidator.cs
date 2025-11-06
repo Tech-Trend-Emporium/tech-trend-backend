@@ -9,7 +9,10 @@
         public const string InactiveUserErrorMessage = "The user is not active.";
         public const string RefreshTokenRequiredWhenAllSessionsFalseErrorMessage = "Refresh token required when AllSessions=false.";
         public const string RefreshTokenNotFoundErrorMessage = "Refresh token not found.";
+        public const string TokenInvalidOrExpiredErrorMessage = "The token is invalid or has expired.";
         public const string EmailOrUsernameAlreadyTakenErrorMessage = "The email or username is already taken.";
+        public const string RecoveryAnswerIncorrectErrorMessage = "The recovery answer is incorrect.";
+        public const string RecoveryPasswordNotConfiguredErrorMessage = "Password recovery is not configured for this user.";
 
         // DTO validation messages
         public const int RefreshTokenMinLength = 20;
@@ -50,5 +53,27 @@
         public const string PasswordNotContainUsernameMessage = "The field Password must not contain the username.";
         public const string PasswordNotContainEmailLocalMessage = "The field Password must not contain part of the email.";
         public const string PasswordNotEqualUsernameOrEmailMessage = "The field Password cannot be equal to the username or the email.";
+        public const string EmailOrUsernameWhitespaceMessage = "This field must not have leading or trailing spaces.";
+        public const string EmailRegex = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+        public const string EmailFormatMessage = "Email format is invalid.";
+        public const string UsernameFormatMessage = "Username may contain letters, numbers, dots, hyphens, and underscores only.";
+        public const string QuestionIdRequiredMessage = "A recovery question must be selected.";
+        public const string QuestionIdRangeMessage = "Recovery question identifier must be greater than or equal to 1.";
+        public const string QuestionIdPositiveMessage = "Recovery question identifier must be a positive integer.";
+        public const string AnswerRequiredMessage = "Answer is required.";
+        public const string AnswerLengthMessage = "Answer must be between 1 and 2000 characters.";
+        public const string AnswerWhitespaceMessage = "Answer must not have leading or trailing spaces.";
+        public const string ResetTokenRequiredMessage = "Reset token is required.";
+        public const string ResetTokenLengthMessage = "Reset token is too long.";
+        public const string ResetTokenRegex = @"^([A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+|[A-Za-z0-9\-_]{20,2048})$";
+        public const string ResetTokenFormatMessage = "Reset token format is invalid.";
+        public const string ResetTokenWhitespaceMessage = "Reset token must not have leading or trailing spaces.";
+        public const string NewPasswordRequiredMessage = "New password is required.";
+        public const string NewPasswordLengthMessage = "Password must be between 8 and 128 characters.";
+        public const string PasswordComplexityRegex = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$";
+        public const string PasswordComplexityMessage = "Password must include uppercase, lowercase, digits, and symbols.";
+        public const string PasswordsMustMatchMessage = "Passwords do not match.";
+        public const string AnswerRequiredWhenQuestionProvidedMessage = "An answer is required when a recovery question is provided.";
+        public const string QuestionIdRequiredWhenAnswerProvidedMessage = "A recovery question must be selected when an answer is provided.";
     }
 }

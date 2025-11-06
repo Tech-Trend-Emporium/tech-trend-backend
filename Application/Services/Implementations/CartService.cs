@@ -3,9 +3,12 @@ using Application.Abstractions;
 using Application.Dtos.Cart;
 using Application.Exceptions;
 using Data.Entities;
+using Domain.Enums;
 using Domain.Validations;
 using General.Dto.Cart;
 using General.Mappers;
+using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 
 namespace Application.Services.Implementations
 {
@@ -16,6 +19,7 @@ namespace Application.Services.Implementations
     /// </summary>
     public class CartService : ICartService
     {
+        private readonly IConfiguration _config;
         private readonly ICartRepository _cartRepository;
         private readonly IProductRepository _productRepository;
         private readonly ICouponRepository _couponRepository;
@@ -31,12 +35,14 @@ namespace Application.Services.Implementations
         /// <param name="inventoryRepository">Repository for inventory checks and updates.</param>
         /// <param name="unitOfWork">Unit of Work to persist changes and orchestrate transactions.</param>
         public CartService(
+            IConfiguration config,
             ICartRepository cartRepository,
             IProductRepository productRepository,
             ICouponRepository couponRepositor,
             IInventoryRepository inventoryRepository,
             IUnitOfWork unitOfWork)
         {
+            _config = config;
             _cartRepository = cartRepository;
             _productRepository = productRepository;
             _couponRepository = couponRepositor;
@@ -52,8 +58,10 @@ namespace Application.Services.Implementations
         /// <returns>The existing or newly created <see cref="Cart"/> with related graph loaded.</returns>
         private async Task<Cart> EnsureCart(int userId, CancellationToken ct)
         {
-            return await _cartRepository.GetByUserIdAsync(userId, includeGraph: true, ct)
-                ?? await _cartRepository.CreateForUserAsync(userId, ct);
+            var cart = await _cartRepository.GetByUserIdAsync(userId, includeGraph: true, ct);
+            if (cart is not null && cart.Status == CartStatus.ACTIVE) return cart;
+
+            return await _cartRepository.CreateForUserAsync(userId, ct);
         }
 
         /// <summary>
@@ -131,6 +139,41 @@ namespace Application.Services.Implementations
             if (coupon is null) throw new NotFoundException(CouponValidator.CouponNotFound(code));
 
             return coupon;
+        }
+
+        /// <summary>
+        /// Simulates a payment authorization/charge for academic/demo purposes.
+        /// Uses a configurable success rate and generates a pseudo transaction identifier.
+        /// </summary>
+        /// <param name="amount">The total amount to charge.</param>
+        /// <param name="method">The selected payment method.</param>
+        /// <param name="clientProvidedTxnId">
+        /// An optional client-provided transaction/intent id (e.g., from a mocked UI). If empty, one is generated.
+        /// </param>
+        /// <param name="ct">A cancellation token.</param>
+        /// <returns>
+        /// A tuple with:
+        /// <list type="bullet">
+        /// <item><description><see cref="PaymentStatus"/> result (APROBBED or REJECTED)</description></item>
+        /// <item><description>Transaction id string</description></item>
+        /// <item><description>PaidAtUtc when approved; otherwise null</description></item>
+        /// </list>
+        /// </returns>
+        private async Task<(PaymentStatus status, DateTime? paidAtUtc)> SimulatePaymentAsync(decimal amount, PaymentMethod method, CancellationToken ct)
+        {
+            await Task.Yield();
+
+            var sim = _config.GetSection("Payments").GetSection("Simulation");
+            var successRate = sim.GetValue<int?>("SuccessRatePercent") ?? 90;
+
+            successRate = Math.Clamp(successRate, 0, 100);
+
+            var roll = RandomNumberGenerator.GetInt32(1, 101);
+            var approved = (amount > 0m) && (roll <= successRate);
+
+            return approved
+                ? (PaymentStatus.APPROVED, DateTime.UtcNow)
+                : (PaymentStatus.REJECTED, null);
         }
 
         /// <summary>
@@ -306,39 +349,90 @@ namespace Application.Services.Implementations
         }
 
         /// <summary>
-        /// Performs checkout by validating stock for each item and decrementing inventory atomically.
-        /// Clears the cart upon success.
+        /// Performs checkout by simulating payment and finalizing the order atomically.
+        /// When payment is approved, inventory is decremented; when rejected, inventory remains unchanged.
+        /// In both cases, the cart is snapshotted as an order (PLACED) and a new ACTIVE cart is created.
         /// </summary>
         /// <param name="userId">The user identifier.</param>
+        /// <param name="dto">The checkout request data transfer object (address, payment method, optional txn id).</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="ConflictException">Thrown when the cart is not ACTIVE or inventory is insufficient.</exception>
         /// <exception cref="NotFoundException">Thrown when a product or its inventory cannot be found.</exception>
-        /// <exception cref="ConflictException">Thrown when there is insufficient inventory during checkout.</exception>
-        public async Task CheckoutAsync(int userId, CancellationToken ct = default)
+        public async Task CheckoutAsync(int userId, CheckoutRequest dto, CancellationToken ct = default)
         {
-            var cart = await EnsureCart(userId, ct);
+            var cart = await _cartRepository.GetByUserIdAsync(userId, includeGraph: true, ct)
+                ?? await _cartRepository.CreateForUserAsync(userId, ct);
+
+            if (cart.Status != CartStatus.ACTIVE)
+                throw new ConflictException(CartValidator.CartNotActiveErrorMessage);
 
             await _unitOfWork.ExecuteInTransactionAsync(async innerCt =>
             {
+                decimal total = 0m;
                 foreach (var item in cart.Items.ToList())
                 {
                     var product = await _productRepository.GetByIdAsync(innerCt, item.ProductId)
                         ?? throw new NotFoundException(ProductValidator.ProductNotFound(item.ProductId));
 
-                    var invList = await _inventoryRepository.ListAsync(i => i.ProductId == item.ProductId, 0, 1, innerCt);
-                    var inv = invList.FirstOrDefault()
-                        ?? throw new NotFoundException(CartValidator.InventoryNotConfiguredForProduct(product.Title));
-
-                    if (item.Quantity > inv.Available)
-                        throw new ConflictException(CartValidator.InventoryInsufficient(product.Title, inv.Available));
-
-                    inv.Available -= item.Quantity;
-                    _inventoryRepository.Update(inv);
+                    checked { total += product.Price * item.Quantity; }
                 }
 
-                cart.Items.Clear();
+                var (simStatus, paidAtUtc) =
+                    await SimulatePaymentAsync(total, dto.PaymentMethod, innerCt);
+
+                if (simStatus == PaymentStatus.APPROVED)
+                {
+                    foreach (var item in cart.Items.ToList())
+                    {
+                        var product = await _productRepository.GetByIdAsync(innerCt, item.ProductId)
+                            ?? throw new NotFoundException(ProductValidator.ProductNotFound(item.ProductId));
+
+                        var invList = await _inventoryRepository.ListAsync(i => i.ProductId == item.ProductId, 0, 1, innerCt);
+                        var inv = invList.FirstOrDefault()
+                            ?? throw new NotFoundException(CartValidator.InventoryNotConfiguredForProduct(product.Title));
+
+                        if (item.Quantity > inv.Available)
+                            throw new ConflictException(CartValidator.InventoryInsufficient(product.Title, inv.Available));
+
+                        inv.Available -= item.Quantity;
+                        _inventoryRepository.Update(inv);
+                    }
+                }
+
+                cart.Address = dto.Address;
+                cart.PaymentMethod = dto.PaymentMethod;
+                cart.PaymentStatus = simStatus;
+                cart.TotalAmount = total;
+                cart.Status = CartStatus.PLACED;
+                cart.PlacedAtUtc = DateTime.UtcNow;
+                cart.PaidAtUtc = simStatus == PaymentStatus.APPROVED ? paidAtUtc : null;
                 cart.CouponId = null;
+
+                await _unitOfWork.SaveChangesAsync(innerCt);
+
+                await _cartRepository.CreateForUserAsync(userId, innerCt);
             }, ct);
+        }
+
+        /// <summary>
+        /// Retrieves the current user's placed orders with pagination.
+        /// </summary>
+        /// <param name="userId">The unique identifier of the user.</param>
+        /// <param name="skip">The number of records to skip. Defaults to 0.</param>
+        /// <param name="take">The number of records to return. Defaults to 50.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/>.</param>
+        /// <returns>
+        /// A tuple with the list of <see cref="OrderResponse"/> items and the total count of placed orders.
+        /// </returns>
+        public async Task<(IReadOnlyList<OrderResponse> Items, int Total)> ListMyOrdersAsync(int userId, int skip = 0, int take = 50, CancellationToken ct = default)
+        {
+            var carts = await _cartRepository.ListPlacedByUserAsync(userId, skip, take, ct);
+            var total = await _cartRepository.CountPlacedByUserAsync(userId, ct);
+
+            var items = CartMapper.ToOrderResponseList(carts);
+            
+            return (items, total);
         }
     }
 }

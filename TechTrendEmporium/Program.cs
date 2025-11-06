@@ -24,6 +24,21 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalAndProd",
+        policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:3000",
+                "http://localhost:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        });
+});
+
 if (builder.Environment.IsProduction())
 {
     // Load secrets from Azure Key Vault in production
@@ -99,6 +114,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWishListRepository, WishListRepository>();
+builder.Services.AddScoped<IRecoveryQuestionRepository, RecoveryQuestionRepository>();
 
 // Add services
 builder.Services.AddScoped<IApprovalJobService, ApprovalJobService>();
@@ -113,6 +129,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWishListService, WishListService>();
+builder.Services.AddScoped<IRecoveryQuestionService, RecoveryQuestionService>();
 
 // Add controllers
 builder.Services.AddControllers();

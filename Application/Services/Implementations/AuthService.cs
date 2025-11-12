@@ -20,6 +20,7 @@ namespace Application.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly ISessionRepository _sessionRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
+        private readonly IRecoveryQuestionRepository _recoveryQuestionRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ITokenService _tokenService;
@@ -37,6 +38,7 @@ namespace Application.Services.Implementations
             IUserRepository userRepository,
             ISessionRepository sessionRepository,
             IRefreshTokenRepository refreshTokenRepository,
+            IRecoveryQuestionRepository recoveryQuestionRepository,
             IUnitOfWork unitOfWork,
             IPasswordHasher<User> passwordHasher,
             ITokenService tokenService)
@@ -44,6 +46,7 @@ namespace Application.Services.Implementations
             _userRepository = userRepository;
             _sessionRepository = sessionRepository;
             _refreshTokenRepository = refreshTokenRepository;
+            _recoveryQuestionRepository = recoveryQuestionRepository;
             _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
@@ -75,7 +78,6 @@ namespace Application.Services.Implementations
             if (user == null || !user.IsActive)
                 throw new UnauthorizedException(AuthValidator.InactiveUserErrorMessage);
 
-            // revoke the old refresh token and chain to the new one
             existing.RevokedAtUtc = DateTime.UtcNow;
             var newRt = _tokenService.CreateRefreshToken(existing.UserId, existing.SessionId);
             existing.ReplacedByToken = newRt.Token;
@@ -117,16 +119,13 @@ namespace Application.Services.Implementations
             if (!user.IsActive)
                 throw new UnauthorizedException(AuthValidator.InactiveUserErrorMessage);
 
-            // create session
             var session = new Session { UserId = user.Id };
             _sessionRepository.Add(session);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            // optional custom claims example
             var extraClaims = new[] { new Claim("perm", "products.read") };
             var (access, exp) = _tokenService.CreateAccessToken(user, extraClaims);
 
-            // issue refresh token
             var rt = _tokenService.CreateRefreshToken(user.Id, session.Id);
             _refreshTokenRepository.Add(rt);
 
@@ -174,7 +173,6 @@ namespace Application.Services.Implementations
             if (rt == null || rt.UserId != currentUserId)
                 throw new NotFoundException(AuthValidator.RefreshTokenNotFoundErrorMessage);
 
-            // revoke the specific refresh token and close its session
             rt.RevokedAtUtc = DateTime.UtcNow;
 
             var session = await _sessionRepository.GetByIdAsync(ct, rt.SessionId);
@@ -201,19 +199,134 @@ namespace Application.Services.Implementations
             if (await _userRepository.ExistsAsync(u => u.Email == dto.Email || u.Username == dto.Username, ct))
                 throw new ConflictException(AuthValidator.EmailOrUsernameAlreadyTakenErrorMessage);
 
-            var user = new User
-            {
-                Email = dto.Email,
-                Username = dto.Username,
-                Role = Domain.Enums.Role.SHOPPER,
-                CreatedAt = DateTime.UtcNow
-            };
+            var user = AuthMapper.ToEntity(dto);
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
+
+            if (dto.RecoveryQuestionId.HasValue && !string.IsNullOrWhiteSpace(dto.RecoveryAnswer))
+            {
+                var question = await _recoveryQuestionRepository.GetByIdAsync(ct, dto.RecoveryQuestionId.Value)
+                    ?? throw new NotFoundException(RecoveryQuestionValidator.RecoveryQuestionNotFound(dto.RecoveryQuestionId.Value));
+
+                var normalized = dto.RecoveryAnswer.Trim().ToLowerInvariant();
+                user.RecoveryQuestionId = question.Id;
+                user.RecoveryAnswerHash = _passwordHasher.HashPassword(user, normalized);
+            }
 
             _userRepository.Add(user);
             await _unitOfWork.SaveChangesAsync(ct);
 
             return AuthMapper.ToResponse(user);
+        }
+
+        /// <summary>
+        /// Sets or updates the recovery question and hashed answer for the currently authenticated user.
+        /// </summary>
+        /// <param name="currentUserId">
+        /// The unique identifier of the authenticated user whose recovery information is being configured.
+        /// </param>
+        /// <param name="dto">
+        /// The data transfer object containing the recovery question identifier and the plain-text answer.
+        /// </param>
+        /// <param name="ct">
+        /// An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="NotFoundException">
+        /// Thrown when the user or the specified recovery question cannot be found.
+        /// </exception>
+        public async Task SetRecoveryInfoAsync(int currentUserId, SetRecoveryInfoRequest dto, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetByIdAsync(ct, currentUserId)
+                ?? throw new NotFoundException(UserValidator.UserNotFound(currentUserId));
+
+            var question = await _recoveryQuestionRepository.GetByIdAsync(ct, dto.RecoveryQuestionId)
+                ?? throw new NotFoundException(RecoveryQuestionValidator.RecoveryQuestionNotFound(dto.RecoveryQuestionId));
+
+            var normalized = dto.Answer.Trim().ToLowerInvariant();
+            user.RecoveryQuestionId = question.Id;
+            user.RecoveryAnswerHash = _passwordHasher.HashPassword(user, normalized);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Validates a user’s recovery answer and issues a short-lived password reset token if the response is correct.
+        /// </summary>
+        /// <param name="dto">
+        /// The data transfer object containing the user's email or username, the recovery question identifier,
+        /// and the provided answer.
+        /// </param>
+        /// <param name="ct">
+        /// An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// A <see cref="VerifyRecoveryAnswerResponse"/> containing the temporary password reset token and its expiration timestamp.
+        /// </returns>
+        /// <exception cref="UnauthorizedException">
+        /// Thrown when the provided credentials, question, or answer are invalid or when recovery information
+        /// has not been configured for the user.
+        /// </exception>
+        /// <remarks>
+        /// The generated password reset token is short-lived (typically 10–15 minutes) and can be invalidated
+        /// if the user's <see cref="Data.Entities.User.SecurityStamp"/> changes.
+        /// </remarks>
+        public async Task<VerifyRecoveryAnswerResponse> VerifyRecoveryAnswerAsync(VerifyRecoveryAnswerRequest dto, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetAsync(
+                u => u.Email == dto.EmailOrUsername || u.Username == dto.EmailOrUsername,
+                asTracking: true, ct: ct)
+                ?? throw new UnauthorizedException(AuthValidator.InvalidCredentialsErrorMessage);
+
+            if (user.RecoveryQuestionId != dto.RecoveryQuestionId || string.IsNullOrWhiteSpace(user.RecoveryAnswerHash))
+                throw new UnauthorizedException(AuthValidator.RecoveryPasswordNotConfiguredErrorMessage);
+
+            var normalized = dto.Answer.Trim().ToLowerInvariant();
+            var result = _passwordHasher.VerifyHashedPassword(user, user.RecoveryAnswerHash!, normalized);
+            if (result == PasswordVerificationResult.Failed)
+                throw new UnauthorizedException(AuthValidator.RecoveryAnswerIncorrectErrorMessage);
+
+            var (token, exp) = _tokenService.CreatePasswordResetToken(user);
+            return new VerifyRecoveryAnswerResponse { ResetToken = token, ExpiresAtUtc = exp };
+        }
+
+        /// <summary>
+        /// Resets the user's password using a valid password reset token and a new password.
+        /// Also regenerates the user's <see cref="Data.Entities.User.SecurityStamp"/> and revokes all active refresh tokens.
+        /// </summary>
+        /// <param name="dto">
+        /// The data transfer object containing the password reset token and the new password.
+        /// </param>
+        /// <param name="ct">
+        /// An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="UnauthorizedException">
+        /// Thrown when the reset token is invalid, expired, or has been invalidated by a prior password change.
+        /// </exception>
+        /// <exception cref="NotFoundException">
+        /// Thrown when the user associated with the token cannot be found.
+        /// </exception>
+        /// <remarks>
+        /// This operation also invalidates any existing refresh tokens to ensure previously issued
+        /// sessions are terminated after a password reset.
+        /// </remarks>
+        public async Task ResetPasswordAsync(ResetPasswordRequest dto, CancellationToken ct = default)
+        {
+            var principal = _tokenService.ValidatePasswordResetToken(dto.ResetToken)
+                ?? throw new UnauthorizedException(AuthValidator.TokenInvalidOrExpiredErrorMessage);
+
+            var userId = int.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var user = await _userRepository.GetByIdAsync(ct, userId)
+                ?? throw new NotFoundException(UserValidator.UserNotFound(userId));
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+            user.SecurityStamp = Guid.NewGuid().ToString("N");
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            await _refreshTokenRepository.RevokeAllActiveByUserAsync(user.Id, ct);
         }
     }
 }

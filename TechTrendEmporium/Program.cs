@@ -24,6 +24,24 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontPolicy",
+        policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+        });
+});
+
 if (builder.Environment.IsProduction())
 {
     // Load secrets from Azure Key Vault in production
@@ -99,6 +117,7 @@ builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWishListRepository, WishListRepository>();
+builder.Services.AddScoped<IRecoveryQuestionRepository, RecoveryQuestionRepository>();
 
 // Add services
 builder.Services.AddScoped<IApprovalJobService, ApprovalJobService>();
@@ -113,6 +132,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IWishListService, WishListService>();
+builder.Services.AddScoped<IRecoveryQuestionService, RecoveryQuestionService>();
 
 // Add controllers
 builder.Services.AddControllers();
@@ -178,6 +198,15 @@ app.UseSwaggerUI();
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);
 if (useHttps) { app.UseHsts(); app.UseHttpsRedirection(); }
 
+app.Use(async (ctx, next) =>
+{
+    var origin = ctx.Request.Headers["Origin"].ToString();
+    if (!string.IsNullOrEmpty(origin))
+        Console.WriteLine($"CORS DEBUG -> Origin={origin} | {ctx.Request.Method} {ctx.Request.Path}");
+    await next();
+});
+app.UseCors("FrontPolicy");
+app.UseCors("FrontPolicy");
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();

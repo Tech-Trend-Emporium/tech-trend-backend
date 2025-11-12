@@ -19,9 +19,11 @@ namespace Infrastructure.DbContexts
         public DbSet<WishListItem> WishListItems => Set<WishListItem>();
         public DbSet<Coupon> Coupons => Set<Coupon>();
         public DbSet<ApprovalJob> ApprovalJobs => Set<ApprovalJob>();
+        public DbSet<RecoveryQuestion> RecoveryQuestions => Set<RecoveryQuestion>();
 
         protected override void OnModelCreating(ModelBuilder mb)
         {
+            // --- Table names ---
             mb.Entity<User>().ToTable("users");
             mb.Entity<Session>().ToTable("sessions");
             mb.Entity<RefreshToken>().ToTable("refresh_tokens");
@@ -35,27 +37,60 @@ namespace Infrastructure.DbContexts
             mb.Entity<WishListItem>().ToTable("wish_list_items");
             mb.Entity<Coupon>().ToTable("coupons");
             mb.Entity<ApprovalJob>().ToTable("approval_jobs");
+            mb.Entity<RecoveryQuestion>().ToTable("recovery_questions");
 
-            mb.Entity<User>().Property(u => u.Role).HasConversion<int>();
+            // --- Enum conversions ---
+            mb.Entity<User>()
+              .Property(u => u.Role)
+              .HasConversion<int>();
 
-            // Session -> User (N:1)
+            // Cart.Status is required (non-nullable enum)
+            mb.Entity<Cart>()
+              .Property(c => c.Status)
+              .HasConversion<int>()
+              .IsRequired();
+
+            // These are OPTIONAL until checkout (nullable enums -> int?)
+            mb.Entity<Cart>()
+              .Property(c => c.PaymentMethod)
+              .HasConversion<int?>()
+              .IsRequired(false);
+
+            mb.Entity<Cart>()
+              .Property(c => c.PaymentStatus)
+              .HasConversion<int?>()
+              .IsRequired(false);
+
+            // --- Users ---
+            mb.Entity<User>().HasIndex(u => u.Email).IsUnique();
+            mb.Entity<User>().HasIndex(u => u.Username).IsUnique();
+
+            // Optional RecoveryQuestion on User (N:1)
+            mb.Entity<User>()
+                .HasOne(u => u.RecoveryQuestion)
+                .WithMany()
+                .HasForeignKey(u => u.RecoveryQuestionId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // Ensure max length for the hashed answer (shadow or concrete property)
+            mb.Entity<User>()
+              .Property<string?>("RecoveryAnswerHash")
+              .HasMaxLength(256);
+
+            // --- Sessions & Tokens ---
             mb.Entity<Session>()
               .HasOne(s => s.User)
               .WithMany(u => u.Sessions)
               .HasForeignKey(s => s.UserId)
               .OnDelete(DeleteBehavior.Cascade);
 
-            mb.Entity<User>().HasIndex(u => u.Email).IsUnique();
-            mb.Entity<User>().HasIndex(u => u.Username).IsUnique();
-
-            // RefreshToken -> User (N:1)
             mb.Entity<RefreshToken>()
                 .HasOne(rt => rt.User)
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // RefreshToken -> Session (N:1)
             mb.Entity<RefreshToken>()
                 .HasOne(rt => rt.Session)
                 .WithMany()
@@ -64,14 +99,13 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<RefreshToken>().HasIndex(rt => rt.Token).IsUnique();
 
-            // Product -> Category (N:1)
+            // --- Catalogs / Products ---
             mb.Entity<Product>()
               .HasOne(p => p.Category)
               .WithMany(c => c.Products)
               .HasForeignKey(p => p.CategoryId)
               .OnDelete(DeleteBehavior.Restrict);
 
-            // Product <-> Inventory (1:1)
             mb.Entity<Product>()
               .HasOne(p => p.Inventory)
               .WithOne(i => i.Product)
@@ -80,7 +114,7 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<Inventory>().HasIndex(i => i.ProductId).IsUnique();
 
-            // Review -> Product/User
+            // --- Reviews ---
             mb.Entity<Review>()
               .HasOne(r => r.Product)
               .WithMany(p => p.Reviews)
@@ -95,17 +129,20 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<Review>().HasIndex(r => new { r.UserId, r.ProductId }).IsUnique();
 
+            // --- Coupons ---
             mb.Entity<Coupon>().HasIndex(c => c.Code).IsUnique();
             mb.Entity<Coupon>().Property(c => c.Discount).HasPrecision(18, 2);
 
-            // User <-> Cart (1:1)
+            // --- Carts (User 1:N Carts) ---
             mb.Entity<User>()
-              .HasOne(u => u.Cart)
+              .HasMany(u => u.Carts)
               .WithOne(c => c.User)
-              .HasForeignKey<Cart>(c => c.UserId)
+              .HasForeignKey(c => c.UserId)
               .OnDelete(DeleteBehavior.Cascade);
 
-            mb.Entity<Cart>().HasIndex(c => c.UserId).IsUnique();
+            // Non-unique index on UserId + composite for queries
+            mb.Entity<Cart>().HasIndex(c => c.UserId);
+            mb.Entity<Cart>().HasIndex(c => new { c.UserId, c.Status, c.CreatedAt });
 
             // Cart -> Coupon (N:1)
             mb.Entity<Cart>()
@@ -114,16 +151,18 @@ namespace Infrastructure.DbContexts
               .HasForeignKey(c => c.CouponId)
               .OnDelete(DeleteBehavior.SetNull);
 
-            // User <-> WishList (1:1)
-            mb.Entity<User>()
-              .HasOne(u => u.WishList)
-              .WithOne(w => w.User)
-              .HasForeignKey<WishList>(w => w.UserId)
-              .OnDelete(DeleteBehavior.Cascade);
+            // Optional cart fields until checkout
+            mb.Entity<Cart>()
+              .Property(c => c.Address)
+              .HasMaxLength(120)
+              .IsRequired(false);
 
-            mb.Entity<WishList>().HasIndex(w => w.UserId).IsUnique();
+            mb.Entity<Cart>()
+              .Property(c => c.TotalAmount)
+              .HasPrecision(18, 2)
+              .IsRequired(false);
 
-            // CartItem -> Cart/Product
+            // --- Cart Items ---
             mb.Entity<CartItem>()
               .HasOne(ci => ci.Cart)
               .WithMany(c => c.Items)
@@ -138,7 +177,15 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<CartItem>().HasIndex(ci => new { ci.CartId, ci.ProductId }).IsUnique();
 
-            // WishListItem -> WishList/Product
+            // --- Wish Lists ---
+            mb.Entity<User>()
+              .HasOne(u => u.WishList)
+              .WithOne(w => w.User)
+              .HasForeignKey<WishList>(w => w.UserId)
+              .OnDelete(DeleteBehavior.Cascade);
+
+            mb.Entity<WishList>().HasIndex(w => w.UserId).IsUnique();
+
             mb.Entity<WishListItem>()
               .HasOne(wi => wi.WishList)
               .WithMany(w => w.Items)
@@ -153,7 +200,7 @@ namespace Infrastructure.DbContexts
 
             mb.Entity<WishListItem>().HasIndex(wi => new { wi.WishListId, wi.ProductId }).IsUnique();
 
-            // ApprovalJob -> Users
+            // --- Approval Jobs ---
             mb.Entity<ApprovalJob>()
                 .HasOne(j => j.RequestedByUser)
                 .WithMany(u => u.RequestedJobs)
@@ -172,7 +219,11 @@ namespace Infrastructure.DbContexts
             mb.Entity<ApprovalJob>().HasIndex(x => x.RequestedBy);
             mb.Entity<ApprovalJob>().HasIndex(x => x.DecidedBy);
 
+            // --- Common precisions / indexes ---
             mb.Entity<Product>().Property(p => p.Price).HasPrecision(18, 2);
+
+            // --- Recovery Questions ---
+            mb.Entity<RecoveryQuestion>().HasIndex(rq => rq.Question).IsUnique();
         }
     }
 }

@@ -6,6 +6,19 @@ namespace Application.Mappers
 {
     public class AuthMapper
     {
+        public static User ToEntity(SignUpRequest dto)
+        {
+            if (dto is null) throw new ArgumentNullException(nameof(dto));
+
+            return new User
+            {
+                Email = dto.Email.Trim(),
+                Username = dto.Username.Trim(),
+                Role = Domain.Enums.Role.SHOPPER,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
         public static SignUpResponse ToResponse(User entity)
         {
             if (entity is null) throw new ArgumentNullException(nameof(entity));

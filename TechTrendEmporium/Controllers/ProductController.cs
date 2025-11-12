@@ -71,7 +71,6 @@ namespace API.Controllers
         /// <param name="ct">Cancellation token.</param>
         /// <returns><c>200 OK</c> with <c>{ Total, Items }</c>.</returns>
         /// <response code="200">Returns the page of products with total count.</response>
-        [Authorize]
         [HttpGet]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         public async Task<IActionResult> List(

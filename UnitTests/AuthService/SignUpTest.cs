@@ -22,6 +22,7 @@ namespace UnitTests.AuthServices
         private readonly IUserRepository _userRepo = Substitute.For<IUserRepository>();
         private readonly ISessionRepository _sessionRepo = Substitute.For<ISessionRepository>();
         private readonly IRefreshTokenRepository _rtRepo = Substitute.For<IRefreshTokenRepository>();
+        private readonly IRecoveryQuestionRepository _rqRepo = Substitute.For<IRecoveryQuestionRepository>();
         private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
         private readonly IPasswordHasher<User> _hasher = Substitute.For<IPasswordHasher<User>>();
         private readonly ITokenService _tokens = Substitute.For<ITokenService>();
@@ -29,7 +30,7 @@ namespace UnitTests.AuthServices
 
         public SignUpTest()
         {
-            _sut = new AuthService(_userRepo, _sessionRepo, _rtRepo, _uow, _hasher, _tokens);
+            _sut = new AuthService(_userRepo, _sessionRepo, _rtRepo, _rqRepo, _uow, _hasher, _tokens);
         }
 
         [Fact]

@@ -56,7 +56,6 @@ namespace API.Controllers
         /// <c>200 OK</c> with an object containing the total count and list of <see cref="RecoveryQuestionResponse"/> objects.
         /// </returns>
         /// <response code="200">Returns the paginated list of recovery questions.</response>
-        [Authorize]
         [HttpGet]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)

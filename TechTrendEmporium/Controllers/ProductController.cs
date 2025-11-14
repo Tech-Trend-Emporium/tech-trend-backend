@@ -52,7 +52,6 @@ namespace API.Controllers
         /// <returns><c>200 OK</c> with the product; otherwise <c>404 Not Found</c>.</returns>
         /// <response code="200">Returns the product.</response>
         /// <response code="404">If the product does not exist.</response>
-        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)

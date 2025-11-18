@@ -37,7 +37,6 @@ namespace API.Controllers
         /// </returns>
         /// <response code="200">Returns the recovery question.</response>
         /// <response code="404">If the recovery question does not exist.</response>
-        [Authorize]
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(RecoveryQuestionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)

@@ -27,15 +27,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalAndProd",
+    options.AddPolicy("FrontPolicy",
         policy =>
         {
             policy.WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
                 "http://localhost:3000",
-                "http://localhost:5173"
+                "http://127.0.0.1:3000"
             )
+            .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowCredentials();
         });
 });
 
@@ -195,6 +198,15 @@ app.UseSwaggerUI();
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);
 if (useHttps) { app.UseHsts(); app.UseHttpsRedirection(); }
 
+app.Use(async (ctx, next) =>
+{
+    var origin = ctx.Request.Headers["Origin"].ToString();
+    if (!string.IsNullOrEmpty(origin))
+        Console.WriteLine($"CORS DEBUG -> Origin={origin} | {ctx.Request.Method} {ctx.Request.Path}");
+    await next();
+});
+app.UseCors("FrontPolicy");
+app.UseCors("FrontPolicy");
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();

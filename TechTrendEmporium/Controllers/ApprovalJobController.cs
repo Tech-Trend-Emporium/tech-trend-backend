@@ -34,25 +34,6 @@ namespace API.Controllers
         }
 
         /// <summary>
-        /// Submits a new approval job request on behalf of the current user.
-        /// </summary>
-        /// <param name="dto">The request data containing the type, operation, and payload for the approval job.</param>
-        /// <param name="ct">An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-        /// <returns>
-        /// A newly created <see cref="ApprovalJobResponse"/> representing the submitted job.
-        /// </returns>
-        /// <response code="200">Returns the created approval job.</response>
-        /// <response code="400">If the request data is invalid.</response>
-        /// <response code="401">If the user is not authorized.</response>
-        [HttpPost]
-        [Authorize(Roles = "EMPLOYEE")]
-        [ProducesResponseType(typeof(ApprovalJobResponse), StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApprovalJobResponse>> Submit([FromBody] SubmitApprovalJobRequest dto, CancellationToken ct)
-        {
-            return Ok(await _approvalJobService.SubmitAsync(CurrentUserId, dto, ct));
-        }
-
-        /// <summary>
         /// Retrieves a paginated list of all pending approval jobs awaiting a decision.
         /// </summary>
         /// <param name="skip">The number of records to skip. Defaults to 0.</param>

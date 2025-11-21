@@ -172,7 +172,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // Configure the HTTP request pipeline.
 var app = builder.Build();
-app.UseCors("FrontPolicy");
+
 using (var scope = app.Services.CreateScope())
 {
     var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -199,13 +199,7 @@ app.UseSwaggerUI();
 var useHttps = builder.Configuration.GetValue<bool>("UseHttps", false);
 if (useHttps) { app.UseHsts(); app.UseHttpsRedirection(); }
 
-app.Use(async (ctx, next) =>
-{
-    var origin = ctx.Request.Headers["Origin"].ToString();
-    if (!string.IsNullOrEmpty(origin))
-        Console.WriteLine($"CORS DEBUG -> Origin={origin} | {ctx.Request.Method} {ctx.Request.Path}");
-    await next();
-});
+app.UseCors("FrontPolicy");
 app.UseSerilogRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthentication();

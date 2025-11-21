@@ -52,7 +52,7 @@ namespace API.Controllers
         /// <returns><c>200 OK</c> with the product; otherwise <c>404 Not Found</c>.</returns>
         /// <response code="200">Returns the product.</response>
         /// <response code="404">If the product does not exist.</response>
-        [HttpGet("by_id/{id:int}")]
+        [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
@@ -60,7 +60,15 @@ namespace API.Controllers
             return result is null ? NotFound() : Ok(result);
         }
 
-        [HttpGet("by-name/{name}")]
+        /// <summary>
+        /// Retrieves a product by its unique name.
+        /// </summary>
+        /// <param name="name">The product name.</param>
+        /// <param name="ct">An optional cancellation token.</param>
+        /// <returns><c>200 OK</c> with the product; otherwise <c
+        /// <response code="200">Returns the product.</response>
+        /// <response code="404">If the product does not exist.</response>
+        [HttpGet("{name:alpha}")]
         [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByName([FromRoute] string name, CancellationToken ct)
         {

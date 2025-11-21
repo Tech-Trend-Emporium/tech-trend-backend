@@ -29,8 +29,16 @@ namespace Application.Services
         /// The task result contains the <see cref="ProductResponse"/> if found; otherwise, <c>null</c>.
         /// </returns>
         Task<ProductResponse?> GetByIdAsync(int id, CancellationToken ct = default);
+        
+        /// <summary>
+        /// Retrieves a specific product by its name, including its category name.
+        /// </summary>
+        /// <param name="name">The name of the product.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// The <see cref="ProductResponse"/> if found; otherwise, <c>null</c>.
+        /// </returns>
         Task<ProductResponse?> GetByNameAsync(string name, CancellationToken ct = default);
-
 
         /// <summary>
         /// Retrieves a paginated list of products.

@@ -55,6 +55,24 @@ namespace Application.Services.Implementations
         }
 
         /// <summary>
+        /// Retrieves a specific product by its name, including its category name.
+        /// </summary>
+        /// <param name="name">The name of the product.</param>
+        /// <param name="ct">An optional <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// The <see cref="ProductResponse"/> if found; otherwise, <c>null</c>.
+        /// </returns>
+        public async Task<ProductResponse> GetByNameAsync(string name, CancellationToken ct = default)
+        {
+            var entity = await _productRepository.GetAsync(p => p.Title.Trim().ToUpper().Contains(name.Trim().ToUpper()), asTracking: true, ct: ct);
+            if (entity == null) return null;
+
+            var category = await _categoryRepository.GetByIdAsync(ct, entity.CategoryId);
+
+            return ProductMapper.ToResponse(entity, category.Name);
+        }
+
+        /// <summary>
         /// Retrieves a paginated list of products, including their associated category names.
         /// </summary>
         /// <param name="skip">The number of records to skip. Defaults to 0.</param>

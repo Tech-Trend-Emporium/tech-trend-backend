@@ -61,6 +61,22 @@ namespace API.Controllers
         }
 
         /// <summary>
+        /// Retrieves a product by its unique name.
+        /// </summary>
+        /// <param name="name">The product name.</param>
+        /// <param name="ct">An optional cancellation token.</param>
+        /// <returns><c>200 OK</c> with the product; otherwise <c
+        /// <response code="200">Returns the product.</response>
+        /// <response code="404">If the product does not exist.</response>
+        [HttpGet("{name:alpha}")]
+        [ProducesResponseType(typeof(ProductResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetByName([FromRoute] string name, CancellationToken ct)
+        {
+            var result = await _productService.GetByNameAsync(name, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+
+        /// <summary>
         /// Retrieves a paginated list of products along with the total count.
         /// Optionally filters by category name.
         /// </summary>

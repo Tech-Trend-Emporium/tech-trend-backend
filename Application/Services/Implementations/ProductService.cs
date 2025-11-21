@@ -54,6 +54,16 @@ namespace Application.Services.Implementations
             return ProductMapper.ToResponse(entity, category.Name);
         }
 
+        public async Task<ProductResponse> GetByNameAsync(string name, CancellationToken ct = default)
+        {
+            var entity = await _productRepository.GetAsync(p => p.Title.Trim().ToUpper().Contains(name.Trim().ToUpper()), asTracking: true, ct: ct);
+            if (entity == null) return null;
+
+            var category = await _categoryRepository.GetByIdAsync(ct, entity.CategoryId);
+
+            return ProductMapper.ToResponse(entity, category.Name);
+        }
+
         /// <summary>
         /// Retrieves a paginated list of products, including their associated category names.
         /// </summary>

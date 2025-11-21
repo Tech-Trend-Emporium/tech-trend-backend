@@ -70,7 +70,6 @@ namespace API.Controllers
         /// <param name="ct">An optional cancellation token.</param>
         /// <returns><c>200 OK</c> with an object containing <c>Total</c> and <c>Items</c>.</returns>
         /// <response code="200">Returns the page of categories with total count.</response>
-        [Authorize(Roles = "ADMIN, EMPLOYEE, SHOPPER")]
         [HttpGet]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         public async Task<IActionResult> List([FromQuery] int skip = 0, [FromQuery] int take = 50, CancellationToken ct = default)

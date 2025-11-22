@@ -16,6 +16,8 @@ namespace General.Mappers
                 {
                     ProductId = i.ProductId,
                     UnitPrice = i.Product?.Price ?? 0m,
+                    Name = i.Product?.Title ?? string.Empty,
+                    ImageUrl = i.Product?.ImageUrl ?? string.Empty,
                     Quantity = i.Quantity,
                     LineTotal = (i.Product?.Price ?? 0m) * i.Quantity
                 })
@@ -73,7 +75,8 @@ namespace General.Mappers
             var items = cart.Items.Select(i => new OrderItemResponse
             {
                 ProductId = i.ProductId,
-                Title = i.Product?.Title ?? string.Empty,
+                Name = i.Product?.Title ?? string.Empty,
+                ImageUrl = i.Product?.ImageUrl ?? string.Empty,
                 UnitPrice = i.Product?.Price ?? 0m,
                 Quantity = i.Quantity,
                 Subtotal = (i.Product?.Price ?? 0m) * i.Quantity

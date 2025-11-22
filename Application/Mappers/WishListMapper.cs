@@ -15,8 +15,9 @@ namespace General.Mappers
                 .Select(i => new WishListItemResponse
                 {
                     ProductId = i.ProductId,
-                    ProductName = i.Product?.Title ?? string.Empty,
-                    Price = i.Product?.Price ?? 0m,
+                    Name = i.Product?.Title ?? string.Empty,
+                    ImageUrl = i.Product?.ImageUrl ?? string.Empty,
+                    UnitPrice = i.Product?.Price ?? 0m,
                     AddedAt = i.AddedAt
                 })
                 .ToList();

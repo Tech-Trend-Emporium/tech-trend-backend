@@ -9,6 +9,7 @@
 
 ## Visual Studio temporary files, build results, and
 .vs/
+.DS_Store
 
 # Build results
 [Dd]ebug/

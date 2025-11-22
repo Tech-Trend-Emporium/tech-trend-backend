@@ -3,8 +3,9 @@
     public class WishListItemResponse
     {
         public int ProductId { get; set; }
-        public string ProductName { get; set; } = null!;
-        public decimal Price { get; set; }
+        public string Name { get; set; } = null!;
+        public string ImageUrl { get; set; } = null!;
+        public decimal UnitPrice { get; set; }
         public DateTime AddedAt { get; set; }
     }
 }

@@ -1,34 +1,37 @@
 ﻿using Starter.Models;
-using System.Text.Json;
 
 namespace Starter
 {
     public partial class SeedFromApi
     {
-        public static async Task<List<UserFromAPI>> FetchUsersAsync(CancellationToken ct = default)
-{
-            using var http = CreateHttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, "https://fakestoreapi.com/users")
-            {
-                Version = System.Net.HttpVersion.Version11,
-                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
-            };
+        private static readonly List<UserFromAPI> BuiltInUsers = new()
+        {
+            new() { Id = 1,  Email = "john@gmail.com",     Username = "johnd",    Password = "m38rmF$"      },
+            new() { Id = 2,  Email = "morrison@gmail.com", Username = "mor_2314", Password = "83r5^_"       },
+            new() { Id = 3,  Email = "kevin@gmail.com",    Username = "kevinryan",Password = "kev02937@"    },
+            new() { Id = 4,  Email = "don@gmail.com",      Username = "donero",   Password = "ewedon"       },
+            new() { Id = 5,  Email = "derek@gmail.com",    Username = "derek",    Password = "jklg*_56"     },
+            new() { Id = 6,  Email = "david_r@gmail.com",  Username = "david_r",  Password = "3478*#54"     },
+            new() { Id = 7,  Email = "miriam@gmail.com",   Username = "snyder",   Password = "f238&@*$"     },
+            new() { Id = 8,  Email = "william@gmail.com",  Username = "hopkins",  Password = "William56$hj" },
+            new() { Id = 9,  Email = "kate@gmail.com",     Username = "kate_h",   Password = "kfejk@*_"     },
+            new() { Id = 10, Email = "jimmie@gmail.com",   Username = "jimmie_k", Password = "klein*#%*"    },
+        };
 
-            request.Headers.Accept.ParseAdd("application/json");
-            request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
+        public static Task<List<UserFromAPI>> FetchUsersAsync(CancellationToken ct = default)
+        {
+            var normalized = BuiltInUsers
+                .Select(u => new UserFromAPI
+                {
+                    Id       = u.Id,
+                    Email    = u.Email?.Trim().ToLowerInvariant() ?? "",
+                    Username = u.Username?.Trim().ToLowerInvariant() ?? "",
+                    Password = u.Password ?? "DefaultPassword123!"
+                })
+                .ToList();
 
-            using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-            var body = await response.Content.ReadAsStringAsync(ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"[Seed] Error fetching users: {(int)response.StatusCode} {response.StatusCode}");
-                Console.WriteLine($"[Seed] Response body (first 500): {body[..Math.Min(body.Length, 500)]}");
-                return new();
-            }
-
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            return JsonSerializer.Deserialize<List<UserFromAPI>>(body, options) ?? new();
+            Console.WriteLine($"[Seed] Using built-in users: {normalized.Count}");
+            return Task.FromResult(normalized);
         }
     }
 }

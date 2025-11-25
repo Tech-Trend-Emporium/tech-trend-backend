@@ -34,7 +34,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "http://localhost:3000",
-                "http://127.0.0.1:3000"
+                "http://127.0.0.1:3000",
+                "https://main.d3pj42gn592v1q.amplifyapp.com"
             )
             .AllowAnyMethod()
             .AllowAnyHeader()
